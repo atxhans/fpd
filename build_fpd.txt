@@ -1,0 +1,714 @@
+You are Claude Code. Build a production-ready full-stack B2B SaaS application for Fieldpiece called:
+
+FIELDPIECE DIGITAL
+
+Fieldpiece Digital is a multi-tenant HVAC intelligence and service platform that extends Fieldpiece’s position as the trusted tool brand for HVACR technicians into software, workflows, data capture, analytics, and support operations.
+
+This is NOT a single-tenant app. It must be designed from day one as a true multi-tenant B2B platform where Fieldpiece operates the platform centrally and HVAC service companies are tenant customers.
+
+The application should be branded as “Fieldpiece Digital” and the design language should be inspired by the visual identity of fieldpiece.com:
+- industrial / professional / field-service oriented
+- modern and high-trust
+- bold, clean layouts
+- color palette, visual tone, and component styling influenced by fieldpiece.com
+- use a UI system that feels like a natural digital extension of the Fieldpiece brand
+- create a theme layer with reusable brand tokens so the palette can be centrally managed
+
+Do not copy the website directly, but clearly model the UI mood, hierarchy, and palette after the Fieldpiece brand.
+
+==================================================
+PRIMARY GOAL
+==================================================
+
+Create a Fieldpiece Digital platform with:
+
+1. A mobile-friendly technician application
+2. A manager/owner web dashboard for HVAC service companies
+3. A complete Fieldpiece internal admin/support console
+4. A multi-tenant data ingestion and normalization layer
+5. Equipment and service history tracking
+6. AI-assisted diagnostics and recommendations
+7. Role-based access control
+8. Audit trail, tenant controls, and support tooling
+9. A scalable architecture that supports future analytics/data products
+
+The initial commercial focus is the United States, but the architecture should support future global expansion.
+
+==================================================
+REQUIRED TECH STACK
+==================================================
+
+Use this stack unless there is a compelling reason not to:
+
+- Frontend / Full-stack framework: Next.js (latest stable, App Router) + TypeScript
+- Hosting: Vercel
+- Database / Auth / Storage: Supabase
+- UI: Tailwind CSS + shadcn/ui
+- Forms / validation: React Hook Form + Zod
+- Email: Resend
+- Charts: Recharts
+- Background jobs / scheduled tasks: patterns compatible with Vercel + Supabase
+- Testing:
+  - unit tests
+  - integration tests
+  - Playwright end-to-end tests
+- Source control: GitHub
+- DB access: Supabase client + SQL migrations + typed data access
+- Logging / monitoring: structured application logging
+- File storage: Supabase Storage
+- AI integration: create an abstraction layer so LLM-based diagnostics can be added cleanly later
+
+==================================================
+CORE BUSINESS CONCEPT
+==================================================
+
+Fieldpiece already has trusted tools in the hands of HVAC technicians. This platform turns service events and measurement capture into a software and data platform.
+
+The platform should support these groups:
+
+1. Technicians
+- manage jobs
+- capture readings
+- record notes/photos
+- view equipment history
+- receive guided diagnostic suggestions
+
+2. HVAC Service Company Owners / Managers
+- monitor technicians
+- review service quality
+- analyze recurring failures
+- improve productivity
+- reduce callbacks
+
+3. Fieldpiece Internal Teams
+- platform administration
+- tenant onboarding
+- customer support
+- data support / troubleshooting
+- account health monitoring
+- impersonation / assisted support workflows
+- feature flag management
+- billing-readiness / subscription-readiness for future phases
+
+4. Manufacturers (future)
+- anonymized field performance analytics
+
+5. Private Equity / Operators (future)
+- benchmarking and portfolio analytics
+
+For MVP, prioritize:
+- technicians
+- HVAC company managers / admins
+- Fieldpiece internal admin/support users
+
+==================================================
+THIS MUST BE A TRUE MULTI-TENANT B2B APP
+==================================================
+
+This is a real multi-tenant SaaS application.
+
+Requirements:
+- each HVAC service company is its own tenant/account
+- users belong to a tenant
+- tenant data must be isolated
+- Fieldpiece operates the platform as the central provider
+- Fieldpiece internal users need elevated admin/support capabilities
+- future analytics may operate on anonymized/aggregated cross-tenant data, but raw tenant data must remain protected
+
+Use strong tenant boundaries throughout:
+- schema design
+- queries
+- APIs
+- UI
+- RBAC
+- audit logs
+- support tooling
+
+Use Supabase Row Level Security where appropriate.
+
+==================================================
+ROLE MODEL
+==================================================
+
+Support these roles from day one:
+
+FIELDPIECE INTERNAL ROLES
+1. Platform Super Admin
+- full access across all tenants
+- manage tenants
+- manage internal users
+- manage feature flags
+- manage global settings
+- manage platform configuration
+- review platform-wide audit logs
+- access operational dashboards
+
+2. Fieldpiece Support Admin
+- access support console
+- search tenants, users, jobs, equipment
+- assist customers
+- review sync/data issues
+- review tenant health
+- impersonate users with strict audit logging and permissions
+- view but not arbitrarily modify sensitive settings unless allowed
+
+3. Fieldpiece Support Agent
+- limited support access
+- view assigned support cases / support views
+- access approved tenant records
+- impersonation only if explicitly permitted and fully audited
+
+CUSTOMER TENANT ROLES
+4. Company Owner / Company Admin
+- manage one HVAC company tenant
+- manage users, technicians, dispatchers
+- view all jobs, equipment, and dashboards for their tenant
+- configure tenant settings
+
+5. Dispatcher / Office Manager
+- assign jobs
+- review schedules
+- manage workflows
+- review service notes
+
+6. Technician
+- mobile-first experience
+- view assigned jobs
+- capture job data
+- submit notes/photos/readings
+- view relevant service history
+
+FUTURE-READY ROLES
+7. Manufacturer Analyst
+- restricted anonymized analytics access
+
+8. PE Analyst
+- restricted benchmarking access
+
+Implement RBAC cleanly and centrally.
+
+==================================================
+FIELDPIECE INTERNAL ADMIN / SUPPORT REQUIREMENTS
+==================================================
+
+This is critical.
+
+Build a complete internal Fieldpiece admin/support solution.
+
+Fieldpiece must be able to operate this as a real SaaS platform.
+
+Required internal capabilities:
+
+1. Tenant Administration
+- create/edit/suspend tenants
+- view tenant profile
+- tenant status
+- plan/subscription placeholder fields
+- tenant feature flags
+- tenant onboarding status
+- notes/internal account notes
+
+2. User Administration
+- search users across tenants
+- invite users
+- deactivate/reactivate users
+- reset/invalidate sessions if needed
+- view roles and memberships
+
+3. Support Console
+- global search for tenant, user, site, equipment, job, service visit
+- support case notes / internal notes
+- view recent activity for a tenant
+- support troubleshooting views
+- data ingestion troubleshooting views
+- ability to identify stuck jobs, invalid records, failed imports, missing readings, etc.
+
+4. Safe Impersonation / “Login As”
+- platform admin/support admin can impersonate a tenant user
+- highly restricted
+- fully audited
+- clearly visible banner while impersonating
+- reason required before impersonation
+- start/end timestamps captured
+- immutable audit trail
+
+5. Platform Audit & Monitoring
+- platform-wide audit log viewer
+- tenant-specific audit log viewer
+- support actions audit log
+- impersonation audit log
+- configuration change tracking
+
+6. Feature Flag / Configuration Management
+- global feature flags
+- per-tenant feature flags
+- diagnostic rules config
+- reading type config
+- environment enrichment config placeholders
+
+7. Operational Dashboard
+- active tenants
+- active users
+- jobs created
+- readings submitted
+- failed data validations
+- support activity
+- recent tenant usage
+- tenant health indicators
+
+8. Future Billing Readiness
+- design the tenant/account model so subscription/billing can be added later
+- plan, contract tier, seat counts, renewal date placeholders are acceptable in MVP
+
+==================================================
+MVP CUSTOMER MODULES
+==================================================
+
+Build these modules for tenant customers:
+
+1. Authentication & User Management
+- invite-only onboarding
+- email/password auth
+- password reset
+- user profile
+- tenant-based role assignment
+
+2. Tenant / Company Management
+- company profile
+- territory / ZIP coverage
+- team roster
+- company settings
+- optional branding fields
+
+3. Customers / Sites
+- customer
+- site/location
+- residential vs commercial
+- address
+- ZIP code
+- indoor/outdoor indicator
+- notes
+
+4. Equipment / Units
+Fields should include:
+- manufacturer
+- model number
+- serial number
+- unit type
+- refrigerant type
+- tonnage / capacity
+- install date
+- warranty status (manual for now)
+- indoor/outdoor
+- notes
+
+5. Jobs / Service Visits
+Technicians should be able to:
+- view assigned jobs
+- start / pause / complete jobs
+- enter notes
+- add measurements
+- attach photos
+- identify parts needed
+- record follow-up recommendations
+- close visit
+
+Suggested fields:
+- customer/site
+- equipment
+- assigned technician
+- scheduled time
+- service category
+- problem description
+- status
+- resolution
+- follow-up required
+
+6. Readings / Measurements
+Support manual entry in MVP but architect for future automated ingestion.
+
+Typical reading categories:
+- suction pressure
+- discharge pressure
+- superheat
+- subcooling
+- refrigerant type
+- line temperature
+- return air temperature
+- supply air temperature
+- delta T
+- ambient outdoor temperature
+- indoor temperature
+- humidity
+- static pressure
+- airflow / CFM
+- compressor amps
+- fan amps
+- voltage
+- leak indicator
+- refrigerant added / recovered
+- technician charge notes
+
+Requirements:
+- timestamp all readings
+- associate with technician, job, site, and equipment
+- preserve raw values where useful
+- store normalized values
+- validate input carefully
+
+7. Diagnostic Assistance
+Create a diagnostic engine abstraction.
+
+For MVP:
+- rules-based guidance
+- AI-ready service abstraction for future LLM integration
+- suggest likely issues such as:
+  - low refrigerant
+  - airflow restriction
+  - dirty coil
+  - metering device issue
+  - compressor issue
+  - overcharge / undercharge
+
+8. Service History
+Each equipment unit should have:
+- prior visits
+- prior readings
+- notes
+- photos
+- recurring issues
+- parts replaced
+- timeline/history view
+
+9. Manager Dashboard
+Include:
+- jobs by status
+- technician activity summary
+- open follow-ups
+- recurring issues
+- equipment trends
+- recent visits
+- simple geographic summaries if feasible
+
+==================================================
+DATA INGESTION + NORMALIZATION
+==================================================
+
+Architect the system for future Fieldpiece device ingestion.
+
+Need:
+- API endpoint structure for future tool/device ingestion
+- raw payload storage where needed
+- normalization pipeline
+- validation rules
+- unit conversions
+- data quality checks
+- anomaly handling
+
+For MVP implement:
+- app-based manual measurement entry
+- service layer for normalization
+- future-ready ingestion module structure
+
+Create clear service boundaries for:
+- ingestion
+- normalization
+- diagnostics
+- analytics
+- support troubleshooting
+
+==================================================
+ENVIRONMENTAL DATA
+==================================================
+
+Create a future-ready environmental enrichment module.
+
+For MVP:
+- store site ZIP / location
+- support ambient temperature field
+- create placeholders for future weather enrichment APIs
+
+Future use cases:
+- climate zone
+- weather correlation
+- outdoor equipment analysis
+- regional performance trends
+
+==================================================
+UX / DESIGN REQUIREMENTS
+==================================================
+
+The UI should feel like “Fieldpiece Digital” — a polished software extension of the Fieldpiece brand.
+
+Design priorities:
+- mobile-first for technicians
+- desktop-optimized dashboards for managers and Fieldpiece admins
+- strong visual hierarchy
+- bold but practical styling
+- efficient field workflows
+- minimal click count
+- responsive layouts
+- clean cards, tabs, tables, timelines, and dashboards
+
+Branding guidance:
+- use a centralized theme/token system
+- model the palette and tone after fieldpiece.com
+- create semantic tokens for:
+  - primary
+  - secondary
+  - accent
+  - background
+  - surface
+  - border
+  - success
+  - warning
+  - danger
+- ensure accessibility and contrast
+- avoid generic SaaS pastel styling; this should feel durable, field-ready, and professional
+
+Suggested UX zones:
+1. Technician mobile dashboard
+2. Job detail page
+3. Equipment detail page
+4. Service history timeline
+5. Manager dashboard
+6. Tenant settings
+7. Fieldpiece support console
+8. Fieldpiece admin operational dashboard
+
+==================================================
+APPLICATION STRUCTURE
+==================================================
+
+Use a production-quality architecture with clear separation of concerns.
+
+Suggested top-level areas:
+- app/
+- components/
+- lib/
+- services/
+- db/
+- types/
+- hooks/
+- emails/
+- tests/
+- e2e/
+
+Use strong typing throughout.
+
+Create reusable:
+- form components
+- tables
+- permission guards
+- dashboard widgets
+- audit log views
+- impersonation banner / controls
+- tenant switcher/context helpers for internal admins where appropriate
+
+==================================================
+DATABASE DESIGN
+==================================================
+
+Design a strong relational schema in Supabase/Postgres.
+
+Likely entities:
+- tenants
+- tenant_settings
+- tenant_feature_flags
+- users
+- memberships
+- roles
+- customers
+- sites
+- equipment
+- jobs
+- service_visits
+- readings
+- reading_types
+- diagnostic_results
+- attachments
+- notes
+- invitations
+- audit_logs
+- impersonation_sessions
+- support_cases (light MVP/internal)
+- support_notes
+- platform_settings
+- platform_feature_flags
+
+Include:
+- SQL migrations
+- indexes
+- foreign keys
+- timestamps
+- soft deletes where appropriate
+- RLS policies
+
+==================================================
+SECURITY REQUIREMENTS
+==================================================
+
+Must include:
+- strict tenant isolation
+- role-based authorization
+- secure server-side actions
+- protected routes
+- protected APIs
+- support/admin access controls
+- audited impersonation
+- validation at every boundary
+- no secret leakage to client
+- safe file uploads
+- careful handling of internal notes vs customer-visible notes
+
+==================================================
+EMAIL REQUIREMENTS
+==================================================
+
+Use Resend for:
+- invitations
+- password reset / access emails
+- basic account notifications
+
+Create reusable email templates styled consistently with the Fieldpiece Digital brand.
+
+==================================================
+TESTING REQUIREMENTS
+==================================================
+
+Include:
+1. Unit tests for core logic
+2. Integration tests for key flows
+3. Playwright end-to-end tests for:
+- login
+- invite flow
+- tenant onboarding
+- create customer/site
+- add equipment
+- create and complete job
+- submit readings
+- view service history
+- admin user management
+- support search flow
+- impersonation flow
+- feature flag/config change auditing
+
+==================================================
+SEED DATA
+==================================================
+
+Provide realistic seed/demo data for:
+- 1 platform super admin
+- 1 support admin
+- 1 HVAC company tenant
+- several technicians
+- several managers/dispatchers
+- several customer sites
+- several units
+- several jobs
+- several service visits
+- several realistic HVAC readings
+
+Also include enough data to meaningfully demonstrate:
+- tenant isolation
+- support tooling
+- admin dashboards
+- service history
+- diagnostic rules
+
+==================================================
+PAGES / AREAS TO BUILD
+==================================================
+
+At minimum build:
+
+PUBLIC / AUTH
+- sign in
+- forgot/reset password
+- invite acceptance
+
+TENANT USER APP
+- dashboard
+- jobs list
+- job detail
+- customers/sites
+- equipment list/detail
+- service history
+- readings entry
+- team/users (for tenant admin)
+- tenant settings
+
+FIELDPIECE INTERNAL APP
+- platform dashboard
+- tenants list/detail
+- users search/detail
+- support console/search
+- tenant health view
+- audit log viewer
+- impersonation controls/history
+- platform settings
+- feature flags
+
+==================================================
+README / DEV EXPERIENCE
+==================================================
+
+Provide:
+- README with setup instructions
+- .env.example
+- Supabase setup notes
+- Vercel deployment notes
+- Resend setup notes
+- seed instructions
+- test instructions
+- architecture notes
+- explanation of tenant model
+- explanation of support/admin model
+- explanation of impersonation safeguards
+
+==================================================
+IMPORTANT IMPLEMENTATION NOTES
+==================================================
+
+- This is a serious production-grade B2B multi-tenant SaaS app
+- Do not build it like a generic CRUD demo
+- Prioritize maintainability and extensibility
+- The support/admin experience is a first-class requirement, not an afterthought
+- Fieldpiece must be able to operate this platform as the software vendor
+- Technician UX must be excellent on mobile
+- Manager UX must be practical and data-rich
+- Internal Fieldpiece UX must support real customer operations
+- Keep architecture clean for future additions such as:
+  - direct device ingestion
+  - weather enrichment
+  - parts ordering
+  - manufacturer analytics
+  - PE benchmarking
+  - external API access
+  - billing/subscriptions
+  - mobile push notifications
+
+==================================================
+DELIVERABLES
+==================================================
+
+Please generate:
+
+1. complete project scaffold
+2. database schema and migrations
+3. Supabase auth + tenant model
+4. internal admin/support system
+5. main application pages and layouts
+6. Fieldpiece Digital theme/tokens
+7. seed data
+8. tests
+9. README
+10. .env.example
+11. deployment notes
+12. explanation of architectural decisions
+
+At the end, provide:
+1. file tree
+2. schema summary
+3. setup steps
+4. recommended next enhancements
