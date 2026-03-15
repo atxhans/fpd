@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1, // Single worker to avoid auth session conflicts
+  workers: 1,
   reporter: [['html', { open: 'never' }]],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
@@ -13,14 +13,21 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
+    // Auth setup — company admin (owner@abchvac.com)
     {
-      name: 'auth-setup',
+      name: 'company-auth-setup',
       testMatch: '**/auth.setup.ts',
     },
+    // Auth setup — platform super admin (superadmin@fieldpiecedigital.com)
+    {
+      name: 'admin-auth-setup',
+      testMatch: '**/admin-auth.setup.ts',
+    },
+    // All tests run in chromium after both auth setups complete
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      dependencies: ['auth-setup'],
+      dependencies: ['company-auth-setup', 'admin-auth-setup'],
     },
   ],
 })
