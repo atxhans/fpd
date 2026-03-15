@@ -9,6 +9,7 @@ import { MapPin, Phone, Mail, FileText, Briefcase } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import type { Metadata } from 'next'
 import { CustomerEditForm } from './customer-edit-form'
+import { SiteForm } from './site-form'
 
 export const metadata: Metadata = { title: 'Customer' }
 
@@ -31,7 +32,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       .is('deleted_at', null)
       .single(),
     supabase.from('sites')
-      .select('id, name, address_line1, city, state, zip, site_type')
+      .select('id, name, address_line1, address_line2, city, state, zip, site_type, notes')
       .eq('customer_id', id)
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
@@ -103,7 +104,12 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
       {/* Sites */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Service Sites ({sites.length})</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Service Sites ({sites.length})</CardTitle>
+          {canEdit && (
+            <SiteForm mode="create" customerId={c.id} tenantId={tenantId} />
+          )}
+        </CardHeader>
         <CardContent className="p-0">
           {sites.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">No sites on file.</p>
@@ -112,11 +118,32 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
               {sites.map(s => (
                 <div key={s.id} className="flex items-start gap-3 p-4">
                   <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{s.name}</p>
-                    <p className="text-sm text-muted-foreground">{s.address_line1}, {s.city}, {s.state} {s.zip}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {s.address_line1}{s.address_line2 ? `, ${s.address_line2}` : ''}, {s.city}, {s.state} {s.zip}
+                    </p>
+                    {s.notes && <p className="text-xs text-muted-foreground mt-1 italic">{s.notes}</p>}
                   </div>
-                  <Badge variant="outline" className="ml-auto capitalize shrink-0">{s.site_type}</Badge>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="outline" className="capitalize">{s.site_type}</Badge>
+                    {canEdit && (
+                      <SiteForm
+                        mode="edit"
+                        siteId={s.id}
+                        defaultValues={{
+                          name:          s.name,
+                          address_line1: s.address_line1,
+                          address_line2: s.address_line2 ?? '',
+                          city:          s.city,
+                          state:         s.state,
+                          zip:           s.zip,
+                          site_type:     s.site_type,
+                          notes:         s.notes ?? '',
+                        }}
+                      />
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
