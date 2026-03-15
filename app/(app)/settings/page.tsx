@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
 import type { Metadata } from 'next'
@@ -21,8 +20,7 @@ export default async function SettingsPage() {
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
 
   return (
-    <div className="p-6 space-y-6">
-      <PageHeader title="Settings" subtitle="Company and account configuration" />
+    <div className="space-y-6">
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>

@@ -81,6 +81,7 @@ async function sendAssignmentEmail(
 
   await sendJobAssignedEmail({
     to:            customer.email,
+    tenantId:      job.tenant_id,
     customerName:  customer.name,
     jobNumber:     job.job_number,
     technicianName: techName,
@@ -91,7 +92,7 @@ async function sendAssignmentEmail(
 
 async function sendCompletionEmail(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  job: { id: string; job_number: string; assigned_technician_id: string | null; resolution_summary: string | null; customer_id: string }
+  job: { id: string; job_number: string; assigned_technician_id: string | null; resolution_summary: string | null; customer_id: string; tenant_id: string }
 ) {
   const [{ data: customer }, { data: tech }] = await Promise.all([
     supabase.from('customers').select('name, email').eq('id', job.customer_id).single(),
@@ -108,6 +109,7 @@ async function sendCompletionEmail(
 
   await sendJobCompletedEmail({
     to:                customer.email,
+    tenantId:          job.tenant_id,
     customerName:      customer.name,
     jobNumber:         job.job_number,
     technicianName:    techName,

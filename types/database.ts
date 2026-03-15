@@ -773,6 +773,36 @@ export interface Database {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          id: string
+          tenant_id: string
+          key: string
+          subject: string
+          html_body: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          tenant_id: string
+          key: string
+          subject?: string
+          html_body?: string
+        }
+        Update: {
+          subject?: string
+          html_body?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'email_templates_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: {}
     Functions: {}

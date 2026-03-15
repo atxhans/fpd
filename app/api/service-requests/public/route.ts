@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
   // Send confirmation email
   await sendServiceRequestConfirmation({
     to:           email,
+    tenantId:     customer?.tenant_id ?? null,
     customerName: customer?.name ?? name,
     requestId:    requestId ?? 'NEW',
     description,

@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
     // Known customer — confirm receipt
     await sendServiceRequestConfirmation({
       to:           contactEmail,
+      tenantId:     customer.tenant_id,
       customerName: customer.name,
       requestId:    sr.id,
       description,
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
   } else {
     // Unknown sender — send signup link
     const signupUrl = `${appUrl}/request-service?ref=${sr.id}`
-    await sendUnmatchedInboundReply({ to: contactEmail, signupUrl, description })
+    await sendUnmatchedInboundReply({ to: contactEmail, tenantId: null, signupUrl, description })
 
     await supabase
       .from('service_requests')
