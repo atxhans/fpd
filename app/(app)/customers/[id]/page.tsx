@@ -37,7 +37,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       .is('deleted_at', null)
       .order('name'),
     supabase.from('jobs')
-      .select('id, job_number, status, scheduled_at, job_type')
+      .select('id, job_number, status, scheduled_at, service_category')
       .eq('customer_id', id)
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
@@ -138,7 +138,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                     <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{j.job_number}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{j.job_type?.replace(/_/g, ' ') ?? '—'}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{j.service_category?.replace(/_/g, ' ') ?? '—'}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <StatusBadge status={j.status} />
