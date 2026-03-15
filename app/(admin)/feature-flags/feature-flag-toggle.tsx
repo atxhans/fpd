@@ -23,9 +23,14 @@ export function FeatureFlagToggle({ id, flagKey, enabled, scope }: FeatureFlagTo
     setLoading(true)
     setValue(newValue)
     const supabase = createClient()
-    const { error } = scope === 'global'
-      ? await supabase.from('platform_feature_flags').update({ enabled: newValue }).eq('id', id)
-      : await supabase.from('tenant_feature_flags').update({ enabled: newValue }).eq('id', id)
+    let error: { message: string } | null = null
+    if (scope === 'global') {
+      const res = await supabase.from('platform_feature_flags').update({ enabled: newValue }).eq('id', id)
+      error = res.error
+    } else {
+      const res = await supabase.from('tenant_feature_flags').update({ enabled: newValue }).eq('id', id)
+      error = res.error
+    }
     setLoading(false)
     if (error) {
       setValue(!newValue)

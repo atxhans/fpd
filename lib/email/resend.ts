@@ -1,6 +1,8 @@
 import { Resend } from 'resend'
 
-export const resend = new Resend(process.env.RESEND_API_KEY)
+// Fall back to a placeholder so the build succeeds when the env var isn't set locally.
+// Actual sends will fail at runtime without a real key — set RESEND_API_KEY in .env.local.
+export const resend = new Resend(process.env.RESEND_API_KEY ?? 'build_placeholder')
 
 export const FROM_ADDRESS = 'Fieldpiece Digital <noreply@fieldpiecedigital.com>'
 

@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Play, Pause, CheckCircle } from 'lucide-react'
+import { updateJobStatus } from '@/lib/actions/job-actions'
 
 interface JobActionsProps {
   job: Record<string, unknown>
@@ -22,14 +22,9 @@ export function JobActions({ job, userId, role }: JobActionsProps) {
 
   async function updateStatus(newStatus: string) {
     setLoading(true)
-    const supabase = createClient()
-    const updates: Record<string, unknown> = { status: newStatus }
-    if (newStatus === 'in_progress' && !job.started_at) updates.started_at = new Date().toISOString()
-    if (newStatus === 'completed') updates.completed_at = new Date().toISOString()
-
-    const { error } = await supabase.from('jobs').update(updates).eq('id', job.id as string)
+    const result = await updateJobStatus(job.id as string, newStatus as Parameters<typeof updateJobStatus>[1])
     setLoading(false)
-    if (error) { toast.error(error.message); return }
+    if (result.error) { toast.error(result.error); return }
     toast.success(`Job ${newStatus.replace('_', ' ')}`)
     router.refresh()
   }

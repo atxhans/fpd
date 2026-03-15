@@ -444,6 +444,13 @@ export interface Database {
             isOneToOne: false
             referencedRelation: 'customers'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'jobs_site_id_fkey'
+            columns: ['site_id']
+            isOneToOne: false
+            referencedRelation: 'sites'
+            referencedColumns: ['id']
           }
         ]
       }
@@ -716,6 +723,53 @@ export interface Database {
           description?: string | null
           status?: 'open' | 'in_progress' | 'resolved' | 'closed'
           priority?: 'low' | 'medium' | 'high' | 'critical'
+        }
+        Relationships: []
+      }
+      service_requests: {
+        Row: {
+          id: string
+          tenant_id: string | null
+          customer_id: string | null
+          source: 'email' | 'web_form' | 'manual'
+          contact_name: string | null
+          contact_email: string
+          contact_phone: string | null
+          subject: string | null
+          description: string | null
+          address: string | null
+          status: 'new' | 'acknowledged' | 'converted' | 'spam' | 'closed'
+          job_id: string | null
+          raw_payload: Json
+          auto_response_sent_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          tenant_id?: string | null
+          customer_id?: string | null
+          source?: 'email' | 'web_form' | 'manual'
+          contact_name?: string | null
+          contact_email: string
+          contact_phone?: string | null
+          subject?: string | null
+          description?: string | null
+          address?: string | null
+          status?: 'new' | 'acknowledged' | 'converted' | 'spam' | 'closed'
+          job_id?: string | null
+          raw_payload?: Json
+          auto_response_sent_at?: string | null
+        }
+        Update: {
+          tenant_id?: string | null
+          customer_id?: string | null
+          status?: 'new' | 'acknowledged' | 'converted' | 'spam' | 'closed'
+          job_id?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          description?: string | null
+          address?: string | null
+          auto_response_sent_at?: string | null
         }
         Relationships: []
       }
