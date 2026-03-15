@@ -25,7 +25,9 @@ export function SupportSearch() {
     if (!q.trim() || q.length < 2) { setResults([]); return }
     setLoading(true)
     const supabase = createClient()
-    const term = `%${q}%`
+    // Sanitize: strip PostgREST filter syntax special chars (comma, parens, dots in or() context)
+    const safeQ = q.replace(/[^a-zA-Z0-9@._\- ]/g, '')
+    const term = `%${safeQ}%`
 
     const [tenants, users, equipment] = await Promise.all([
       supabase.from('tenants').select('id, name, status').ilike('name', term).is('deleted_at', null).limit(3),

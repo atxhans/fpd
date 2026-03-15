@@ -40,6 +40,18 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (requestId) {
+    // Verify the request belongs to this email before allowing update (prevent IDOR)
+    const { data: existingRequest } = await supabase
+      .from('service_requests')
+      .select('id, contact_email')
+      .eq('id', requestId)
+      .eq('status', 'new')
+      .single()
+
+    if (!existingRequest || existingRequest.contact_email !== email) {
+      return NextResponse.json({ error: 'Request not found' }, { status: 404 })
+    }
+
     // Update existing service_request (from inbound email ref)
     const { error } = await supabase
       .from('service_requests')

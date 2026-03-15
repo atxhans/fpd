@@ -21,6 +21,23 @@ export async function updateJobStatus(
 
   if (!currentJob) return { error: 'Job not found' }
 
+  // Verify the caller has a role that can update job status
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthenticated' }
+
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('tenant_id', currentJob.tenant_id)
+    .eq('is_active', true)
+    .single()
+
+  const allowedRoles = ['company_admin', 'dispatcher', 'technician']
+  if (!membership || !allowedRoles.includes(membership.role)) {
+    return { error: 'Unauthorized' }
+  }
+
   // Build the update payload
   const updates: Record<string, unknown> = { status: newStatus }
   if (newStatus === 'in_progress' && !currentJob.assigned_technician_id) {

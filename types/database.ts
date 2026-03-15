@@ -803,6 +803,36 @@ export interface Database {
           }
         ]
       }
+      api_keys: {
+        Row: {
+          id: string
+          tenant_id: string
+          key_hash: string
+          label: string
+          created_at: string
+          last_used_at: string | null
+          revoked_at: string | null
+        }
+        Insert: {
+          tenant_id: string
+          key_hash: string
+          label?: string
+        }
+        Update: {
+          label?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'api_keys_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: {}
     Functions: {}

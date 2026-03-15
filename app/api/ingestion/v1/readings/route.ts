@@ -1,29 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createHash } from 'crypto'
+import { createAdminClient } from '@/lib/supabase/server'
 import { normalizeReadings, type RawReading } from '@/lib/ingestion/normalizer'
 
 /**
  * POST /api/ingestion/v1/readings
  *
- * Future device ingestion endpoint.
- * Currently accepts manual API submissions with API key auth.
- * Designed to support Fieldpiece tool/device webhooks in future phases.
+ * Device/external ingestion endpoint authenticated via API key.
+ * Keys are stored as SHA-256 hashes in the api_keys table.
  *
  * Headers:
- *   X-API-Key: <tenant API key>
+ *   X-API-Key: <tenant API key (plaintext)>
  *   X-Tenant-Id: <tenant UUID>
  */
 export async function POST(request: NextRequest) {
-  // API key auth (placeholder — implement proper key management later)
   const apiKey = request.headers.get('X-API-Key')
-  const tenantId = request.headers.get('X-Tenant-Id')
+  const tenantIdHeader = request.headers.get('X-Tenant-Id')
 
-  if (!apiKey || !tenantId) {
+  if (!apiKey || !tenantIdHeader) {
     return NextResponse.json(
       { error: 'Missing X-API-Key or X-Tenant-Id headers' },
       { status: 401 }
     )
   }
+
+  const supabase = await createAdminClient()
+
+  // Validate API key by comparing hash against stored records
+  const keyHash = createHash('sha256').update(apiKey).digest('hex')
+  const { data: keyRecord } = await supabase
+    .from('api_keys')
+    .select('id, tenant_id')
+    .eq('key_hash', keyHash)
+    .is('revoked_at', null)
+    .single()
+
+  if (!keyRecord || keyRecord.tenant_id !== tenantIdHeader) {
+    return NextResponse.json({ error: 'Invalid API key' }, { status: 401 })
+  }
+
+  // Use tenant_id from the validated key record (never trust the header alone)
+  const tenantId = keyRecord.tenant_id
+
+  // Update last_used_at asynchronously
+  supabase.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', keyRecord.id).then()
 
   let body: { job_id: string; equipment_id?: string; technician_id: string; readings: RawReading[] }
 
@@ -43,8 +63,6 @@ export async function POST(request: NextRequest) {
   const normalized = normalizeReadings(rawReadings)
   const validReadings = normalized.filter((r) => r.isValid)
   const invalidReadings = normalized.filter((r) => !r.isValid)
-
-  const supabase = await createClient()
 
   // Verify job belongs to tenant
   const { data: job } = await supabase
