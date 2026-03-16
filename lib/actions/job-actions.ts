@@ -107,6 +107,70 @@ async function sendAssignmentEmail(
   }).catch(err => console.error('Assignment email failed:', err))
 }
 
+export async function createJob(
+  tenantId: string,
+  data: {
+    customer_id: string
+    site_id: string
+    assigned_technician_id?: string | null
+    service_category: string
+    priority: string
+    scheduled_at?: string | null
+    problem_description?: string | null
+    notes?: string | null
+  }
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthenticated' }
+
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('tenant_id', tenantId)
+    .eq('is_active', true)
+    .single()
+
+  const allowedRoles = ['company_admin', 'dispatcher']
+  if (!membership || !allowedRoles.includes(membership.role)) {
+    return { error: 'Unauthorized' }
+  }
+
+  // Generate job_number
+  const year = new Date().getFullYear()
+  const { count } = await supabase
+    .from('jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+
+  const jobNumber = `JOB-${year}-${String((count ?? 0) + 1).padStart(4, '0')}`
+
+  const status = data.assigned_technician_id ? 'assigned' : 'unassigned'
+
+  const { data: job, error } = await supabase
+    .from('jobs')
+    .insert({
+      tenant_id: tenantId,
+      job_number: jobNumber,
+      customer_id: data.customer_id,
+      site_id: data.site_id,
+      assigned_technician_id: data.assigned_technician_id ?? null,
+      created_by: user.id,
+      service_category: data.service_category,
+      priority: data.priority as 'low' | 'normal' | 'high' | 'emergency',
+      scheduled_at: data.scheduled_at ?? null,
+      problem_description: data.problem_description ?? null,
+      notes: data.notes ?? null,
+      status,
+    })
+    .select('id')
+    .single()
+
+  if (error) return { error: error.message }
+  return { ok: true, jobId: job.id }
+}
+
 async function sendCompletionEmail(
   supabase: Awaited<ReturnType<typeof createClient>>,
   job: { id: string; job_number: string; assigned_technician_id: string | null; resolution_summary: string | null; customer_id: string; tenant_id: string }

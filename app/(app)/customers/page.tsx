@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Phone } from 'lucide-react'
+import { CustomerCreateButton } from './customer-create-button'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Customers' }
@@ -15,7 +16,7 @@ export default async function CustomersPage() {
   if (!user) redirect('/login')
 
   const { data: membership } = await supabase
-    .from('memberships').select('tenant_id').eq('user_id', user.id).eq('is_active', true).single()
+    .from('memberships').select('tenant_id, role').eq('user_id', user.id).eq('is_active', true).single()
   const tenantId = membership?.tenant_id
   if (!tenantId) redirect('/login')
 
@@ -29,7 +30,15 @@ export default async function CustomersPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <PageHeader title="Customers" subtitle="Customer accounts and service sites" />
+      <PageHeader
+        title="Customers"
+        subtitle="Customer accounts and service sites"
+        actions={
+          ['company_admin', 'dispatcher'].includes(membership?.role ?? '') ? (
+            <CustomerCreateButton tenantId={tenantId} />
+          ) : undefined
+        }
+      />
       <Card>
         <CardContent className="p-0">
           {!customers?.length ? (

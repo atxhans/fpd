@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/shared/page-header'
 import { StatusBadge } from '@/components/shared/status-badge'
@@ -7,11 +8,26 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus, Clock } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
+import { JobFilterBar } from './job-filter-bar'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Jobs' }
 
-export default async function JobsPage() {
+const PAGE_SIZE = 25
+
+interface SearchParams {
+  status?: string
+  from?: string
+  to?: string
+  page?: string
+}
+
+export default async function JobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const params = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -21,20 +37,54 @@ export default async function JobsPage() {
   const tenantId = membership?.tenant_id
   if (!tenantId) redirect('/login')
 
+  const statusFilter = params.status ?? ''
+  const fromFilter = params.from ?? ''
+  const toFilter = params.to ?? ''
+  const page = Math.max(1, parseInt(params.page ?? '1', 10))
+  const offset = (page - 1) * PAGE_SIZE
+
+  // Build the data query
   let query = supabase
     .from('jobs')
     .select('id, job_number, status, priority, service_category, problem_description, scheduled_at, created_at, customers(name), sites(name, city, state), profiles!jobs_assigned_technician_id_fkey(first_name, last_name)')
     .eq('tenant_id', tenantId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .range(offset, offset + PAGE_SIZE - 1)
+
+  // Build the count query
+  let countQuery = supabase
+    .from('jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .is('deleted_at', null)
 
   // Technicians only see their own jobs
   if (membership?.role === 'technician') {
     query = query.eq('assigned_technician_id', user.id)
+    countQuery = countQuery.eq('assigned_technician_id', user.id)
   }
 
-  const { data: jobs } = await query
+  // Status filter
+  type JobStatus = 'cancelled' | 'in_progress' | 'unassigned' | 'assigned' | 'paused' | 'completed'
+  const validStatuses: JobStatus[] = ['unassigned', 'assigned', 'in_progress', 'paused', 'completed', 'cancelled']
+  if (statusFilter && validStatuses.includes(statusFilter as JobStatus)) {
+    query = query.eq('status', statusFilter as JobStatus)
+    countQuery = countQuery.eq('status', statusFilter as JobStatus)
+  }
+
+  // Date range filter on scheduled_at
+  if (fromFilter) {
+    query = query.gte('scheduled_at', `${fromFilter}T00:00:00`)
+    countQuery = countQuery.gte('scheduled_at', `${fromFilter}T00:00:00`)
+  }
+  if (toFilter) {
+    query = query.lte('scheduled_at', `${toFilter}T23:59:59`)
+    countQuery = countQuery.lte('scheduled_at', `${toFilter}T23:59:59`)
+  }
+
+  const [{ data: jobs }, { count }] = await Promise.all([query, countQuery])
+  const total = count ?? 0
 
   return (
     <div className="p-6 space-y-6">
@@ -51,12 +101,27 @@ export default async function JobsPage() {
         }
       />
 
+      <Suspense>
+        <JobFilterBar
+          currentStatus={statusFilter}
+          currentFrom={fromFilter}
+          currentTo={toFilter}
+          total={total}
+          page={page}
+          pageSize={PAGE_SIZE}
+        />
+      </Suspense>
+
       <Card>
         <CardContent className="p-0">
           {!jobs?.length ? (
             <div className="p-12 text-center text-muted-foreground">
               <p className="font-medium">No jobs found</p>
-              <p className="text-sm mt-1">Create a new job to get started</p>
+              <p className="text-sm mt-1">
+                {statusFilter || fromFilter || toFilter
+                  ? 'Try adjusting your filters'
+                  : 'Create a new job to get started'}
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-border">

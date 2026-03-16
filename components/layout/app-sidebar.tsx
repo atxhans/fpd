@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Briefcase, Users, Wrench,
-  MapPin, Map, Settings, LogOut, BarChart3,
+  MapPin, Map, Settings, LogOut, BarChart3, CalendarDays,
 } from 'lucide-react'
 import { FieldpieceLogo } from './fieldpiece-logo'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 const NAV_ITEMS = [
   { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
   { href: '/jobs',       label: 'Jobs',        icon: Briefcase },
+  { href: '/schedule',   label: 'Schedule',    icon: CalendarDays },
   { href: '/jobs/map',   label: 'Job Map',     icon: Map },
   { href: '/customers',  label: 'Customers',   icon: MapPin },
   { href: '/equipment',  label: 'Equipment',   icon: Wrench },
@@ -30,6 +31,7 @@ export function AppSidebar({ companyName, onSignOut }: AppSidebarProps) {
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard'
     if (href === '/jobs') return pathname === '/jobs' || (pathname.startsWith('/jobs/') && !pathname.startsWith('/jobs/map'))
+    if (href === '/schedule') return pathname === '/schedule' || pathname.startsWith('/schedule/')
     return pathname.startsWith(href)
   }
 

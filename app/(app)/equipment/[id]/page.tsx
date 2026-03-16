@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
+import { EquipmentEditForm } from './equipment-edit-form'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Equipment Detail' }
@@ -17,18 +18,17 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
   if (!user) redirect('/login')
 
   const { data: membership } = await supabase
-    .from('memberships').select('tenant_id').eq('user_id', user.id).eq('is_active', true).single()
+    .from('memberships').select('tenant_id, role').eq('user_id', user.id).eq('is_active', true).single()
   const tenantId = membership?.tenant_id
   if (!tenantId) redirect('/login')
 
-  const [eqResult, jobsResult, readingsResult] = await Promise.all([
+  const [eqResult, jobEquipmentResult, readingsResult] = await Promise.all([
     supabase.from('equipment')
       .select('*, customers(name, email, phone), sites(name, address_line1, city, state, zip)')
       .eq('id', id).eq('tenant_id', tenantId).is('deleted_at', null).single(),
-    supabase.from('jobs')
-      .select('id, job_number, status, service_category, created_at, profiles!jobs_assigned_technician_id_fkey(first_name, last_name)')
-      .eq('tenant_id', tenantId)
-      .contains('job_equipment', [{ equipment_id: id }])
+    supabase.from('job_equipment')
+      .select('jobs(id, job_number, status, scheduled_at, service_category)')
+      .eq('equipment_id', id)
       .order('created_at', { ascending: false })
       .limit(10),
     supabase.from('readings')
@@ -41,10 +41,13 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
   if (!eqResult.data) notFound()
 
   const eq = eqResult.data
-  const jobs = jobsResult.data ?? []
+  const jobs = (jobEquipmentResult.data ?? [])
+    .map((je) => je.jobs as unknown as { id: string; job_number: string; status: string; scheduled_at: string | null; service_category: string } | null)
+    .filter((j): j is { id: string; job_number: string; status: string; scheduled_at: string | null; service_category: string } => j !== null)
   const readings = readingsResult.data ?? []
   const customer = eq.customers as unknown as Record<string, unknown>
   const site = eq.sites as unknown as Record<string, unknown>
+  const canEdit = ['company_admin', 'dispatcher'].includes(membership?.role ?? '')
 
   const details = [
     { label: 'Manufacturer', value: eq.manufacturer },
@@ -64,6 +67,24 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
       <PageHeader
         title={`${eq.manufacturer} ${eq.model_number ?? ''}`}
         subtitle={`${customer?.name ?? ''} · ${site?.city as string}, ${site?.state as string}`}
+        actions={canEdit ? (
+          <EquipmentEditForm
+            equipmentId={id}
+            defaultValues={{
+              manufacturer: eq.manufacturer,
+              model_number: eq.model_number ?? null,
+              serial_number: eq.serial_number ?? null,
+              unit_type: eq.unit_type,
+              location: eq.location ?? null,
+              refrigerant_type: eq.refrigerant_type ?? null,
+              tonnage: eq.tonnage ?? null,
+              install_date: eq.install_date ?? null,
+              warranty_expiry: eq.warranty_expiry ?? null,
+              status: eq.status,
+              notes: eq.notes ?? null,
+            }}
+          />
+        ) : undefined}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -137,22 +158,20 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
                 <p className="text-sm text-muted-foreground">No service history</p>
               ) : (
                 <div className="space-y-2">
-                  {jobs.map((job: Record<string, unknown>) => {
-                    const tech = job.profiles as { first_name: string | null; last_name: string | null } | null
-                    return (
-                      <Link key={job.id as string} href={`/jobs/${job.id}`}>
-                        <div className="p-3 border border-border rounded-lg hover:bg-muted/40 transition-colors">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-mono text-muted-foreground">{job.job_number as string}</span>
-                            <StatusBadge status={job.status as string} />
-                          </div>
-                          <p className="text-sm font-medium capitalize">{String(job.service_category).replace('_', ' ')}</p>
-                          {tech && <p className="text-xs text-muted-foreground">{tech.first_name} {tech.last_name}</p>}
-                          <p className="text-xs text-muted-foreground">{formatDate(job.created_at as string)}</p>
+                  {jobs.map((job) => (
+                    <Link key={job.id} href={`/jobs/${job.id}`}>
+                      <div className="p-3 border border-border rounded-lg hover:bg-muted/40 transition-colors">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-mono text-muted-foreground">{job.job_number}</span>
+                          <StatusBadge status={job.status} />
                         </div>
-                      </Link>
-                    )
-                  })}
+                        <p className="text-sm font-medium capitalize">{job.service_category.replace(/_/g, ' ')}</p>
+                        {job.scheduled_at && (
+                          <p className="text-xs text-muted-foreground">{formatDateTime(job.scheduled_at)}</p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               )}
             </CardContent>

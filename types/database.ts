@@ -833,6 +833,104 @@ export interface Database {
           }
         ]
       }
+      job_equipment: {
+        Row: {
+          id: string
+          job_id: string
+          equipment_id: string
+          created_at: string
+        }
+        Insert: {
+          job_id: string
+          equipment_id: string
+        }
+        Update: Record<string, never>
+        Relationships: [
+          {
+            foreignKeyName: 'job_equipment_job_id_fkey'
+            columns: ['job_id']
+            isOneToOne: false
+            referencedRelation: 'jobs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'job_equipment_equipment_id_fkey'
+            columns: ['equipment_id']
+            isOneToOne: false
+            referencedRelation: 'equipment'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      invoices: {
+        Row: {
+          id: string
+          tenant_id: string
+          job_id: string | null
+          customer_id: string
+          invoice_number: string
+          status: 'draft' | 'sent' | 'paid' | 'void'
+          line_items: Json
+          subtotal: number
+          tax_rate: number
+          tax_amount: number
+          total: number
+          notes: string | null
+          due_date: string | null
+          paid_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          tenant_id: string
+          job_id?: string | null
+          customer_id: string
+          invoice_number: string
+          status?: 'draft' | 'sent' | 'paid' | 'void'
+          line_items?: Json
+          subtotal?: number
+          tax_rate?: number
+          tax_amount?: number
+          total?: number
+          notes?: string | null
+          due_date?: string | null
+          paid_at?: string | null
+        }
+        Update: {
+          status?: 'draft' | 'sent' | 'paid' | 'void'
+          line_items?: Json
+          subtotal?: number
+          tax_rate?: number
+          tax_amount?: number
+          total?: number
+          notes?: string | null
+          due_date?: string | null
+          paid_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'invoices_job_id_fkey'
+            columns: ['job_id']
+            isOneToOne: false
+            referencedRelation: 'jobs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'invoices_customer_id_fkey'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: {}
     Functions: {}

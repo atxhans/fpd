@@ -57,3 +57,47 @@ export async function updateCustomer(customerId: string, formData: z.infer<typeo
   if (error) return { error: error.message }
   return { ok: true }
 }
+
+export async function createCustomer(
+  tenantId: string,
+  data: {
+    name: string
+    email?: string | null
+    phone?: string | null
+    customer_type: 'residential' | 'commercial' | 'industrial'
+    notes?: string | null
+  }
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthenticated' }
+
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('tenant_id', tenantId)
+    .eq('is_active', true)
+    .single()
+
+  const allowedRoles = ['company_admin', 'dispatcher']
+  if (!membership || !allowedRoles.includes(membership.role)) {
+    return { error: 'Unauthorized' }
+  }
+
+  const { data: customer, error } = await supabase
+    .from('customers')
+    .insert({
+      tenant_id: tenantId,
+      name: data.name,
+      email: data.email ?? null,
+      phone: data.phone ?? null,
+      customer_type: data.customer_type,
+      notes: data.notes ?? null,
+    })
+    .select('id')
+    .single()
+
+  if (error) return { error: error.message }
+  return { ok: true, customerId: customer.id }
+}
