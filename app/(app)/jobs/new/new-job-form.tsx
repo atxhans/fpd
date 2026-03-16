@@ -57,7 +57,10 @@ interface NewJobFormProps {
 
 export function NewJobForm({ tenantId, customers, technicians }: NewJobFormProps) {
   const router = useRouter()
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [selectedSite, setSelectedSite] = useState<Site | null>(null)
+  const [selectedTechName, setSelectedTechName] = useState<string>('')
+  const selectedCustomerId = selectedCustomer?.id ?? ''
 
   const {
     register,
@@ -123,13 +126,17 @@ export function NewJobForm({ tenantId, customers, technicians }: NewJobFormProps
               <Select
                 onValueChange={(v) => {
                   const val = String(v ?? '')
+                  const customer = customers.find((c) => c.id === val) ?? null
+                  setSelectedCustomer(customer)
+                  setSelectedSite(null)
                   setValue('customer_id', val)
-                  setSelectedCustomerId(val)
                   setValue('site_id', '')
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a customer" />
+                  {selectedCustomer
+                    ? <span className="flex flex-1 text-left text-sm truncate">{selectedCustomer.name}</span>
+                    : <SelectValue placeholder="Select a customer" />}
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((c) => (
@@ -146,11 +153,18 @@ export function NewJobForm({ tenantId, customers, technicians }: NewJobFormProps
             <div className="space-y-2">
               <Label>Site <span className="text-destructive">*</span></Label>
               <Select
-                onValueChange={(v) => setValue('site_id', String(v ?? ''))}
+                onValueChange={(v) => {
+                  const val = String(v ?? '')
+                  const site = availableSites.find((s) => s.id === val) ?? null
+                  setSelectedSite(site)
+                  setValue('site_id', val)
+                }}
                 disabled={!selectedCustomerId}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder={selectedCustomerId ? 'Select a site' : 'Select a customer first'} />
+                  {selectedSite
+                    ? <span className="flex flex-1 text-left text-sm truncate">{selectedSite.name} — {selectedSite.city}, {selectedSite.state}</span>
+                    : <SelectValue placeholder={selectedCustomerId ? 'Select a site' : 'Select a customer first'} />}
                 </SelectTrigger>
                 <SelectContent>
                   {availableSites.map((s) => (
@@ -219,11 +233,17 @@ export function NewJobForm({ tenantId, customers, technicians }: NewJobFormProps
             <div className="space-y-2">
               <Label>Assign Technician</Label>
               <Select
-                defaultValue=""
-                onValueChange={(v) => setValue('assigned_technician_id', (v as string) || null)}
+                onValueChange={(v) => {
+                  const val = String(v ?? '')
+                  const tech = technicians.find((t) => t.id === val)
+                  setSelectedTechName(tech?.name ?? '')
+                  setValue('assigned_technician_id', val || null)
+                }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Unassigned" />
+                  {selectedTechName
+                    ? <span className="flex flex-1 text-left text-sm truncate">{selectedTechName}</span>
+                    : <SelectValue placeholder="Unassigned" />}
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Unassigned</SelectItem>
