@@ -24,6 +24,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const membership = membershipResult.data
   const tenant = membership?.tenants as { name: string } | null
 
+  // Platform admins with no tenant membership belong in the admin console
+  if (!membership) {
+    const isPlatformUser = (profile as Record<string, unknown> | null)?.is_platform_user
+    redirect(isPlatformUser ? '/admin/platform' : '/login')
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <AppSidebar companyName={tenant?.name} />
