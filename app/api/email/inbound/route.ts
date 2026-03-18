@@ -6,15 +6,20 @@ import {
   sendUnmatchedInboundReply,
 } from '@/lib/email/service-requests'
 
-// Resend inbound email payload shape
+// Resend inbound email webhook payload shape
+// Resend wraps the email fields inside a `data` object
 interface ResendInboundPayload {
-  from: string
-  to: string[]
-  subject: string
-  text?: string
-  html?: string
-  headers?: Record<string, string>
-  messageId?: string
+  type: string
+  created_at: string
+  data: {
+    from: string
+    to: string[]
+    subject: string
+    text?: string
+    html?: string
+    headers?: Record<string, string>
+    messageId?: string
+  }
 }
 
 function extractEmail(from: string): string {
@@ -50,12 +55,18 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = JSON.parse(body) as ResendInboundPayload
+  const email    = payload.data
   const supabase = await createAdminClient()
 
-  const contactEmail = extractEmail(payload.from)
-  const contactName  = extractName(payload.from)
-  const subject      = payload.subject ?? '(no subject)'
-  const description  = payload.text?.slice(0, 2000) ?? payload.html?.replace(/<[^>]+>/g, '').slice(0, 2000) ?? ''
+  if (!email?.from) {
+    console.error('Inbound webhook missing data.from — raw payload:', body.slice(0, 500))
+    return NextResponse.json({ error: 'Unexpected payload shape' }, { status: 400 })
+  }
+
+  const contactEmail = extractEmail(email.from)
+  const contactName  = extractName(email.from)
+  const subject      = email.subject ?? '(no subject)'
+  const description  = email.text?.slice(0, 2000) ?? email.html?.replace(/<[^>]+>/g, '').slice(0, 2000) ?? ''
   const appUrl       = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.fieldpiecedigital.com'
 
   // --- Try to match sender to an existing customer ---
@@ -79,7 +90,7 @@ export async function POST(req: NextRequest) {
       subject,
       description,
       status:        'new',
-      raw_payload:   payload as unknown as import('@/types/database').Json,
+      raw_payload:   email as unknown as import('@/types/database').Json,
     })
     .select('id')
     .single()
