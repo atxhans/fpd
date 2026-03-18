@@ -1,11 +1,10 @@
 import webpush from 'web-push'
 import { createAdminClient } from '@/lib/supabase/server'
 
-webpush.setVapidDetails(
-  'mailto:support@fieldpiecedigital.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
-)
+// Strip "=" padding — web-push requires unpadded URL-safe base64
+function stripPadding(key: string) {
+  return key.replace(/=+$/, '')
+}
 
 /**
  * Send a push notification to all active subscriptions for a user.
@@ -16,6 +15,12 @@ export async function sendPushToUser(
   payload: { title: string; body: string; url?: string },
 ): Promise<void> {
   try {
+    webpush.setVapidDetails(
+      'mailto:support@fieldpiecedigital.com',
+      stripPadding(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''),
+      stripPadding(process.env.VAPID_PRIVATE_KEY ?? ''),
+    )
+
     const admin = await createAdminClient()
     const { data: subs } = await admin
       .from('push_subscriptions')
