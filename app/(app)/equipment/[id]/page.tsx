@@ -63,7 +63,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
       .order('created_at', { ascending: false })
       .limit(10),
     supabase.from('readings')
-      .select('*, reading_types(key, label, unit, category, normal_min, normal_max), jobs(job_number, scheduled_at)')
+      .select('*, reading_types(key, label, unit, category, normal_min, normal_max), jobs(job_number, scheduled_at, weather_snapshot)')
       .eq('equipment_id', id)
       .order('captured_at', { ascending: true }),
   ])

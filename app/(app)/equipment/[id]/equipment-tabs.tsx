@@ -3,13 +3,13 @@
 import { useState, useMemo } from 'react'
 import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, BarChart, Bar, Legend, Cell,
+  ResponsiveContainer, ReferenceLine, BarChart, Bar, Legend,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { StatusBadge } from '@/components/shared/status-badge'
 import { formatDateTime } from '@/lib/utils'
+import { weatherEmoji, type WeatherSnapshot } from '@/lib/openweather'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -33,6 +33,7 @@ export type ReadingRow = {
   jobs: {
     job_number: string
     scheduled_at: string | null
+    weather_snapshot: WeatherSnapshot | null
   } | null
 }
 
@@ -162,7 +163,12 @@ function HistoryTab({ readings }: { readings: ReadingRow[] }) {
 
   // Build chart data: group by job visit, one point per visit
   const chartData = useMemo(() => {
-    const byJob: Record<string, { date: string; jobNumber: string; [key: string]: string | number | null }> = {}
+    const byJob: Record<string, {
+      date: string
+      jobNumber: string
+      weather: WeatherSnapshot | null
+      [key: string]: string | number | null | WeatherSnapshot
+    }> = {}
     for (const r of readings) {
       if (r.value == null || !r.reading_types || r.reading_types.unit === 'bool') continue
       const jobId = r.job_id
@@ -170,12 +176,19 @@ function HistoryTab({ readings }: { readings: ReadingRow[] }) {
         byJob[jobId] = {
           date: r.captured_at.substring(0, 10),
           jobNumber: r.jobs?.job_number ?? jobId.slice(0, 8),
+          weather: r.jobs?.weather_snapshot ?? null,
         }
       }
       byJob[jobId][r.reading_types.key] = r.value
+      // Add weather temp as a chart-able value
+      if (r.jobs?.weather_snapshot) {
+        byJob[jobId]['_weather_temp'] = r.jobs.weather_snapshot.temp_f
+      }
     }
     return Object.values(byJob).sort((a, b) => a.date < b.date ? -1 : 1)
   }, [readings])
+
+  const hasWeather = chartData.some(d => d.weather != null)
 
   // Determine Y axes: pressure (psi/in_wg) vs temperature (F) vs other
   const pressureKeys = new Set(allTypes.filter(rt => ['psi', 'in_wg'].includes(rt.unit)).map(rt => rt.key))
@@ -236,8 +249,11 @@ function HistoryTab({ readings }: { readings: ReadingRow[] }) {
             <Tooltip
               {...TOOLTIP_STYLE}
               labelFormatter={(label, payload) => {
-                const jobNum = payload?.[0]?.payload?.jobNumber ?? ''
-                return `${label}${jobNum ? ` · ${jobNum}` : ''}`
+                const point = payload?.[0]?.payload
+                const jobNum = point?.jobNumber ?? ''
+                const w = point?.weather as WeatherSnapshot | null
+                const weatherStr = w ? ` · ${weatherEmoji(w.icon)} ${w.temp_f}°F ${w.description}` : ''
+                return `${label}${jobNum ? ` · ${jobNum}` : ''}${weatherStr}`
               }}
             />
             {activeList.map((rt, i) => {
@@ -257,6 +273,21 @@ function HistoryTab({ readings }: { readings: ReadingRow[] }) {
                 />
               )
             })}
+            {/* Outdoor temp overlay from weather data */}
+            {hasWeather && (
+              <Line
+                yAxisId={hasPressure && !hasOther ? 'pressure' : 'other'}
+                type="monotone"
+                dataKey="_weather_temp"
+                name="Outdoor Temp"
+                stroke="#94a3b8"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                dot={{ r: 2, fill: '#94a3b8' }}
+                connectNulls
+              />
+            )}
+
             {/* Normal range reference lines for single selected type */}
             {activeList.length === 1 && activeList[0].normal_min != null && (
               <ReferenceLine
@@ -294,13 +325,14 @@ function HistoryTab({ readings }: { readings: ReadingRow[] }) {
                   {rt.label} ({rt.unit})
                 </th>
               ))}
+              <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground whitespace-nowrap">Weather</th>
               <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Flag</th>
             </tr>
           </thead>
           <tbody>
             {(() => {
               // Group readings by job visit
-              const byJob: Record<string, { date: string; jobNum: string; flagged: boolean; values: Record<string, { value: number | null; rtKey: string }> }> = {}
+              const byJob: Record<string, { date: string; jobNum: string; flagged: boolean; weather: WeatherSnapshot | null; values: Record<string, { value: number | null; rtKey: string }> }> = {}
               for (const r of readings) {
                 if (!r.reading_types || r.reading_types.unit === 'bool') continue
                 const jid = r.job_id
@@ -308,6 +340,7 @@ function HistoryTab({ readings }: { readings: ReadingRow[] }) {
                   date: r.captured_at.substring(0, 10),
                   jobNum: r.jobs?.job_number ?? jid.slice(0, 8),
                   flagged: false,
+                  weather: r.jobs?.weather_snapshot ?? null,
                   values: {},
                 }
                 byJob[jid].values[r.reading_types.key] = { value: r.value, rtKey: r.reading_types.key }
@@ -328,6 +361,11 @@ function HistoryTab({ readings }: { readings: ReadingRow[] }) {
                         </td>
                       )
                     })}
+                    <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                      {visit.weather
+                        ? `${weatherEmoji(visit.weather.icon)} ${visit.weather.temp_f}°F · ${visit.weather.humidity}% hum`
+                        : '—'}
+                    </td>
                     <td className="px-3 py-2">
                       {visit.flagged && <Badge variant="destructive" className="text-xs">Flagged</Badge>}
                     </td>

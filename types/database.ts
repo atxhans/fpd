@@ -389,6 +389,7 @@ export interface Database {
           status: 'unassigned' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled'
           notes: string | null
           metadata: Json
+          weather_snapshot: Json | null
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -412,6 +413,7 @@ export interface Database {
           status?: 'unassigned' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled'
           notes?: string | null
           metadata?: Json
+          weather_snapshot?: Json | null
           deleted_at?: string | null
         }
         Update: {
@@ -428,6 +430,7 @@ export interface Database {
           status?: 'unassigned' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled'
           notes?: string | null
           metadata?: Json
+          weather_snapshot?: Json | null
           deleted_at?: string | null
         }
         Relationships: [

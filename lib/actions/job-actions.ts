@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { sendJobAssignedEmail, sendJobCompletedEmail } from '@/lib/email/jobs'
 import { writeAudit } from '@/lib/audit'
+import { geocodeCityState, fetchWeatherForDate } from '@/lib/openweather'
 
 type JobStatus = 'unassigned' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled'
 
@@ -174,7 +175,48 @@ export async function createJob(
 
   if (error) return { error: error.message }
   void writeAudit({ action: 'job.created', tenantId, actorId: user.id, actorEmail: user.email, resourceType: 'job', resourceId: job.id, resourceLabel: jobNumber, metadata: { service_category: data.service_category, priority: data.priority, status } })
+
+  // Fire-and-forget: attach weather snapshot for the scheduled date
+  void attachWeatherToJob(supabase, job.id, data.site_id, data.scheduled_at ?? null)
+
   return { ok: true, jobId: job.id }
+}
+
+async function attachWeatherToJob(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  jobId: string,
+  siteId: string,
+  scheduledAt: string | null,
+) {
+  try {
+    // Get site coordinates (geocode if missing)
+    const { data: site } = await supabase
+      .from('sites')
+      .select('city, state, latitude, longitude')
+      .eq('id', siteId)
+      .single()
+    if (!site) return
+
+    let lat = site.latitude as number | null
+    let lon = site.longitude as number | null
+
+    if (!lat || !lon) {
+      const coords = await geocodeCityState(site.city, site.state)
+      if (!coords) return
+      lat = coords.lat
+      lon = coords.lon
+      // Save for future use
+      await supabase.from('sites').update({ latitude: lat, longitude: lon }).eq('id', siteId)
+    }
+
+    const date = scheduledAt ? new Date(scheduledAt) : new Date()
+    const weather = await fetchWeatherForDate(lat, lon, date)
+    if (!weather) return
+
+    await supabase.from('jobs').update({ weather_snapshot: weather }).eq('id', jobId)
+  } catch {
+    // Weather is non-critical — never let this bubble up
+  }
 }
 
 async function sendCompletionEmail(
