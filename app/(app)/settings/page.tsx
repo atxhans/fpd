@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
+import { APP_URL } from '@/lib/constants'
+import { ServiceRequestLinks } from './service-request-links'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Settings' }
@@ -19,6 +21,8 @@ export default async function SettingsPage() {
   const tenant = membership?.tenants as Record<string, unknown> | null
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
 
+  const canEdit = membership.role === 'company_admin'
+
   return (
     <div className="space-y-6">
 
@@ -29,6 +33,7 @@ export default async function SettingsPage() {
             <dl className="space-y-3">
               {[
                 { label: 'Company Name', value: tenant?.name },
+                { label: 'Slug', value: tenant?.slug },
                 { label: 'Plan', value: tenant?.plan },
                 { label: 'Status', value: tenant?.status },
                 { label: 'Phone', value: tenant?.phone ?? '—' },
@@ -65,6 +70,13 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ServiceRequestLinks
+        tenantId={tenantId}
+        slug={tenant?.slug as string}
+        appUrl={APP_URL}
+        canEdit={canEdit}
+      />
     </div>
   )
 }

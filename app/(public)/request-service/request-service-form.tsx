@@ -24,9 +24,10 @@ type FormData = z.infer<typeof schema>
 interface RequestServiceFormProps {
   requestId: string | null
   prefillEmail: string | null
+  tenantId?: string | null
 }
 
-export function RequestServiceForm({ requestId, prefillEmail }: RequestServiceFormProps) {
+export function RequestServiceForm({ requestId, prefillEmail, tenantId }: RequestServiceFormProps) {
   const [submitted, setSubmitted] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -43,7 +44,7 @@ export function RequestServiceForm({ requestId, prefillEmail }: RequestServiceFo
     const res = await fetch('/api/service-requests/public', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, requestId }),
+      body: JSON.stringify({ ...data, requestId, tenantId: tenantId ?? null }),
     })
 
     if (!res.ok) {

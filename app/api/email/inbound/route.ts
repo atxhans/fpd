@@ -69,20 +69,43 @@ export async function POST(req: NextRequest) {
   const description  = email.text?.slice(0, 2000) ?? email.html?.replace(/<[^>]+>/g, '').slice(0, 2000) ?? ''
   const appUrl       = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.fieldpiecedigital.com'
 
+  // --- Resolve tenant from the `to` address (e.g. abc-hvac@inbound.fieldpiecedigital.com) ---
+  let tenantFromAddress: { id: string; name: string; slug: string } | null = null
+  const toAddress = Array.isArray(email.to) ? email.to[0] : email.to
+  if (toAddress) {
+    const localPart = toAddress.split('@')[0]?.toLowerCase()
+    if (localPart) {
+      const { data: t } = await supabase
+        .from('tenants')
+        .select('id, name, slug')
+        .eq('slug', localPart)
+        .eq('status', 'active')
+        .single()
+      tenantFromAddress = t ?? null
+    }
+  }
+
   // --- Try to match sender to an existing customer ---
-  const { data: customer } = await supabase
+  let customerQuery = supabase
     .from('customers')
     .select('id, name, tenant_id')
     .eq('email', contactEmail)
     .is('deleted_at', null)
     .limit(1)
-    .single()
+
+  if (tenantFromAddress) customerQuery = customerQuery.eq('tenant_id', tenantFromAddress.id)
+
+  const { data: customer } = await customerQuery.single()
+
+  // Resolved tenant: address slug > customer's tenant > null
+  const resolvedTenantId = tenantFromAddress?.id ?? customer?.tenant_id ?? null
+  const resolvedSlug     = tenantFromAddress?.slug ?? null
 
   // --- Create the service request row ---
   const { data: sr, error: srError } = await supabase
     .from('service_requests')
     .insert({
-      tenant_id:     customer?.tenant_id ?? null,
+      tenant_id:     resolvedTenantId,
       customer_id:   customer?.id ?? null,
       source:        'email',
       contact_name:  contactName ?? customer?.name ?? null,
@@ -117,9 +140,12 @@ export async function POST(req: NextRequest) {
       .update({ status: 'acknowledged', auto_response_sent_at: new Date().toISOString() })
       .eq('id', sr.id)
   } else {
-    // Unknown sender — send signup link
-    const signupUrl = `${appUrl}/request-service?ref=${sr.id}`
-    await sendUnmatchedInboundReply({ to: contactEmail, tenantId: null, signupUrl, description })
+    // Unknown sender — send link to per-tenant form if slug known, else generic form
+    const formBase = resolvedSlug
+      ? `${appUrl}/request-service/${resolvedSlug}`
+      : `${appUrl}/request-service`
+    const signupUrl = `${formBase}?ref=${sr.id}`
+    await sendUnmatchedInboundReply({ to: contactEmail, tenantId: resolvedTenantId, signupUrl, description })
 
     await supabase
       .from('service_requests')

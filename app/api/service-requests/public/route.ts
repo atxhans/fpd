@@ -10,6 +10,7 @@ const schema = z.object({
   address:     z.string().min(5),
   description: z.string().min(10),
   requestId:   z.string().uuid().nullable().optional(),
+  tenantId:    z.string().uuid().nullable().optional(),
   website:     z.string().max(0).optional(), // honeypot
 })
 
@@ -27,17 +28,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 })
   }
 
-  const { name, email, phone, address, description, requestId } = parsed.data
+  const { name, email, phone, address, description, requestId, tenantId: explicitTenantId } = parsed.data
   const supabase = await createAdminClient()
 
-  // Try to match customer by email
-  const { data: customer } = await supabase
+  // Try to match customer by email — scoped to the tenant if one is known
+  let customerQuery = supabase
     .from('customers')
     .select('id, name, tenant_id')
     .eq('email', email)
     .is('deleted_at', null)
     .limit(1)
-    .single()
+
+  if (explicitTenantId) customerQuery = customerQuery.eq('tenant_id', explicitTenantId)
+
+  const { data: customer } = await customerQuery.single()
+
+  // Resolved tenant: explicit > customer's tenant > null
+  const resolvedTenantId = explicitTenantId ?? customer?.tenant_id ?? null
 
   if (requestId) {
     // Verify the request belongs to this email before allowing update (prevent IDOR)
@@ -60,7 +67,7 @@ export async function POST(req: NextRequest) {
         contact_phone: phone,
         address,
         description,
-        tenant_id:     customer?.tenant_id ?? null,
+        tenant_id:     resolvedTenantId,
         customer_id:   customer?.id ?? null,
         status:        'acknowledged',
         auto_response_sent_at: new Date().toISOString(),
@@ -82,7 +89,7 @@ export async function POST(req: NextRequest) {
         contact_phone: phone,
         address,
         description,
-        tenant_id:     customer?.tenant_id ?? null,
+        tenant_id:     resolvedTenantId,
         customer_id:   customer?.id ?? null,
         status:        'acknowledged',
         auto_response_sent_at: new Date().toISOString(),
@@ -96,7 +103,7 @@ export async function POST(req: NextRequest) {
   // Send confirmation email
   await sendServiceRequestConfirmation({
     to:           email,
-    tenantId:     customer?.tenant_id ?? null,
+    tenantId:     resolvedTenantId,
     customerName: customer?.name ?? name,
     requestId:    requestId ?? 'NEW',
     description,
