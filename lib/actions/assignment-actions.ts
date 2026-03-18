@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { writeAudit } from '@/lib/audit'
 
 async function requirePlatformAdmin() {
   const supabase = await createClient()
@@ -20,7 +21,7 @@ async function requirePlatformAdmin() {
  * Optionally links to an existing customer if their email matches one in the target tenant.
  */
 export async function assignServiceRequest(srId: string, tenantId: string) {
-  const { error: authError } = await requirePlatformAdmin()
+  const { error: authError, user } = await requirePlatformAdmin()
   if (authError) return { error: authError }
 
   const admin = await createAdminClient()
@@ -54,6 +55,7 @@ export async function assignServiceRequest(srId: string, tenantId: string) {
     .eq('id', srId)
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'service_request.assigned', actorId: user?.id ?? null, actorEmail: user?.email ?? null, resourceType: 'service_request', resourceId: srId, metadata: { tenant_id: tenantId, customer_matched: !!customerId } })
   return { ok: true, customerMatched: !!customerId }
 }
 
@@ -61,7 +63,7 @@ export async function assignServiceRequest(srId: string, tenantId: string) {
  * Mark a service request as spam/closed without assigning it.
  */
 export async function dismissServiceRequest(srId: string, status: 'spam' | 'closed') {
-  const { error: authError } = await requirePlatformAdmin()
+  const { error: authError, user } = await requirePlatformAdmin()
   if (authError) return { error: authError }
 
   const admin = await createAdminClient()
@@ -71,6 +73,7 @@ export async function dismissServiceRequest(srId: string, status: 'spam' | 'clos
     .eq('id', srId)
 
   if (error) return { error: error.message }
+  void writeAudit({ action: `service_request.${status}`, actorId: user?.id ?? null, actorEmail: user?.email ?? null, resourceType: 'service_request', resourceId: srId, metadata: { status } })
   return { ok: true }
 }
 
@@ -78,7 +81,7 @@ export async function dismissServiceRequest(srId: string, status: 'spam' | 'clos
  * Reassign a customer (and all their sites, equipment, jobs) to a different tenant.
  */
 export async function reassignCustomer(customerId: string, newTenantId: string) {
-  const { error: authError } = await requirePlatformAdmin()
+  const { error: authError, user } = await requirePlatformAdmin()
   if (authError) return { error: authError }
 
   const admin = await createAdminClient()
@@ -122,5 +125,6 @@ export async function reassignCustomer(customerId: string, newTenantId: string) 
     .update({ tenant_id: newTenantId })
     .eq('customer_id', customerId)
 
+  void writeAudit({ action: 'customer.tenant_reassigned', actorId: user?.id ?? null, actorEmail: user?.email ?? null, resourceType: 'customer', resourceId: customerId, resourceLabel: customer.name, metadata: { from_tenant: customer.tenant_id, to_tenant: newTenantId } })
   return { ok: true }
 }

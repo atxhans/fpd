@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { sendJobAssignedEmail, sendJobCompletedEmail } from '@/lib/email/jobs'
+import { writeAudit } from '@/lib/audit'
 
 type JobStatus = 'unassigned' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled'
 
@@ -56,6 +57,10 @@ export async function updateJobStatus(
     .eq('id', jobId)
 
   if (error) return { error: error.message }
+
+  const techChanged = options?.technicianId && options.technicianId !== currentJob.assigned_technician_id
+  const auditAction = techChanged ? 'job.technician_assigned' : newStatus !== currentJob.status ? 'job.status_updated' : 'job.updated'
+  void writeAudit({ action: auditAction, tenantId: currentJob.tenant_id, actorId: user.id, actorEmail: user.email, resourceType: 'job', resourceId: jobId, resourceLabel: currentJob.job_number, metadata: { from_status: currentJob.status, to_status: newStatus, technician_id: options?.technicianId ?? null } })
 
   // ---- Email side effects ----
 
@@ -168,6 +173,7 @@ export async function createJob(
     .single()
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'job.created', tenantId, actorId: user.id, actorEmail: user.email, resourceType: 'job', resourceId: job.id, resourceLabel: jobNumber, metadata: { service_category: data.service_category, priority: data.priority, status } })
   return { ok: true, jobId: job.id }
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/server'
 import { normalizeReadings, type RawReading } from '@/lib/ingestion/normalizer'
+import { writeAudit } from '@/lib/audit'
 
 /**
  * POST /api/ingestion/v1/readings
@@ -101,6 +102,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: insertError.message }, { status: 500 })
   }
 
+  void writeAudit({ action: 'ingestion.readings_submitted', tenantId, resourceType: 'job', resourceId: job_id, metadata: { inserted: insertRows.length, rejected: invalidReadings.length, technician_id } })
   return NextResponse.json({
     inserted: insertRows.length,
     rejected: invalidReadings.length,

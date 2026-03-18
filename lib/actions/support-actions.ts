@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { writeAudit } from '@/lib/audit'
 
 // ─── Tenant user: submit a help request ─────────────────────────────────────
 
@@ -37,6 +38,7 @@ export async function createSupportCase(input: {
     .single()
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'support_case.created', tenantId: membership.tenant_id, actorId: user.id, actorEmail: user.email, resourceType: 'support_case', resourceId: data.id, resourceLabel: input.subject, metadata: { page_url: input.pageUrl } })
   return { ok: true, caseId: data.id }
 }
 
@@ -69,6 +71,7 @@ export async function addSupportComment(input: {
   })
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'support_case.comment_added', actorId: user.id, actorEmail: user.email, resourceType: 'support_case', resourceId: input.caseId, metadata: { is_internal: input.isInternal } })
   return { ok: true }
 }
 
@@ -76,7 +79,7 @@ export async function updateSupportCaseStatus(
   caseId: string,
   status: 'open' | 'in_progress' | 'resolved' | 'closed'
 ) {
-  const { error: authError } = await requirePlatformAdmin()
+  const { error: authError, user } = await requirePlatformAdmin()
   if (authError) return { error: authError }
 
   const admin = await createAdminClient()
@@ -86,5 +89,6 @@ export async function updateSupportCaseStatus(
     .eq('id', caseId)
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'support_case.status_updated', actorId: user?.id ?? null, actorEmail: user?.email ?? null, resourceType: 'support_case', resourceId: caseId, metadata: { status } })
   return { ok: true }
 }

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { writeAudit } from '@/lib/audit'
 
 export async function updateEquipment(
   equipmentId: string,
@@ -24,7 +25,7 @@ export async function updateEquipment(
 
   const { data: equipment } = await supabase
     .from('equipment')
-    .select('id, tenant_id')
+    .select('id, manufacturer, model_number, tenant_id')
     .eq('id', equipmentId)
     .is('deleted_at', null)
     .single()
@@ -53,5 +54,6 @@ export async function updateEquipment(
     .eq('id', equipmentId)
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'equipment.updated', tenantId: equipment.tenant_id, actorId: user.id, actorEmail: user.email, resourceType: 'equipment', resourceId: equipmentId, resourceLabel: [data.manufacturer ?? equipment.manufacturer, data.model_number ?? equipment.model_number].filter(Boolean).join(' ') })
   return { ok: true }
 }

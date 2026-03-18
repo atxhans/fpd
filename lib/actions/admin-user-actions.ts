@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { writeAudit } from '@/lib/audit'
 
 async function requirePlatformAdmin() {
   const supabase = await createClient()
@@ -25,7 +26,7 @@ export interface InviteUserInput {
 }
 
 export async function inviteUser(input: InviteUserInput) {
-  const { error: authError } = await requirePlatformAdmin()
+  const { error: authError, user: adminUser } = await requirePlatformAdmin()
   if (authError) return { error: authError }
 
   const admin = await createAdminClient()
@@ -61,6 +62,7 @@ export async function inviteUser(input: InviteUserInput) {
     })
   }
 
+  void writeAudit({ action: 'user.invited', actorId: adminUser?.id ?? null, actorEmail: adminUser?.email ?? null, resourceType: 'user', resourceId: userId, resourceLabel: input.email, metadata: { is_platform_user: input.isPlatformUser, tenant_id: input.tenantId } })
   return { ok: true }
 }
 
@@ -75,7 +77,7 @@ export interface UpdateUserInput {
 }
 
 export async function updateAdminUser(input: UpdateUserInput) {
-  const { error: authError } = await requirePlatformAdmin()
+  const { error: authError, user: adminUser } = await requirePlatformAdmin()
   if (authError) return { error: authError }
 
   const admin = await createAdminClient()
@@ -93,5 +95,6 @@ export async function updateAdminUser(input: UpdateUserInput) {
     .eq('id', input.userId)
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'user.updated', actorId: adminUser?.id ?? null, actorEmail: adminUser?.email ?? null, resourceType: 'user', resourceId: input.userId, metadata: { is_active: input.isActive, is_platform_user: input.isPlatformUser } })
   return { ok: true }
 }

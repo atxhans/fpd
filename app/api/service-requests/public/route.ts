@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/server'
 import { sendServiceRequestConfirmation } from '@/lib/email/service-requests'
+import { writeAudit } from '@/lib/audit'
 
 const schema = z.object({
   name:        z.string().min(2),
@@ -109,5 +110,6 @@ export async function POST(req: NextRequest) {
     description,
   }).catch(err => console.error('Failed to send confirmation email:', err))
 
+  void writeAudit({ action: 'service_request.web_form_submitted', tenantId: resolvedTenantId, resourceType: 'service_request', metadata: { email, customer_matched: !!customer, request_id: requestId ?? null } })
   return NextResponse.json({ ok: true })
 }

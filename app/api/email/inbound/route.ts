@@ -5,6 +5,7 @@ import {
   sendServiceRequestConfirmation,
   sendUnmatchedInboundReply,
 } from '@/lib/email/service-requests'
+import { writeAudit } from '@/lib/audit'
 
 // Resend inbound email webhook payload shape
 // Resend wraps the email fields inside a `data` object
@@ -153,5 +154,6 @@ export async function POST(req: NextRequest) {
       .eq('id', sr.id)
   }
 
+  void writeAudit({ action: 'email.inbound_received', resourceType: 'service_request', resourceId: sr.id, metadata: { from: contactEmail, subject, tenant_id: resolvedTenantId, customer_matched: !!customer } })
   return NextResponse.json({ received: true, id: sr.id })
 }

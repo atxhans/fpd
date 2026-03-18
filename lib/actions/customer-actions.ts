@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { writeAudit } from '@/lib/audit'
 
 const schema = z.object({
   name:          z.string().min(1, 'Name is required'),
@@ -55,6 +56,7 @@ export async function updateCustomer(customerId: string, formData: z.infer<typeo
     .eq('id', customerId)
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'customer.updated', tenantId: customer.tenant_id, actorId: user.id, actorEmail: user.email, resourceType: 'customer', resourceId: customerId, resourceLabel: parsed.data.name })
   return { ok: true }
 }
 
@@ -99,5 +101,6 @@ export async function createCustomer(
     .single()
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'customer.created', tenantId, actorId: user.id, actorEmail: user.email, resourceType: 'customer', resourceId: customer.id, resourceLabel: data.name, metadata: { customer_type: data.customer_type } })
   return { ok: true, customerId: customer.id }
 }

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { writeAudit } from '@/lib/audit'
 
 const slugSchema = z.string()
   .min(2, 'Slug must be at least 2 characters')
@@ -26,6 +27,8 @@ export async function updateTenantSlug(tenantId: string, newSlug: string) {
 
   if (membership?.role !== 'company_admin') return { error: 'Unauthorized' }
 
+  const { data: tenant } = await supabase.from('tenants').select('slug, name').eq('id', tenantId).single()
+
   const { error } = await supabase
     .from('tenants')
     .update({ slug: parsed.data })
@@ -37,5 +40,6 @@ export async function updateTenantSlug(tenantId: string, newSlug: string) {
     return { error: error.message }
   }
 
+  void writeAudit({ action: 'tenant.slug_updated', tenantId, actorId: user.id, actorEmail: user.email, resourceType: 'tenant', resourceId: tenantId, resourceLabel: tenant?.name ?? tenantId, metadata: { old_slug: tenant?.slug, new_slug: parsed.data } })
   return { ok: true }
 }

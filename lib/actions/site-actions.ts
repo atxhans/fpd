@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { writeAudit } from '@/lib/audit'
 
 const schema = z.object({
   name:          z.string().min(1, 'Name is required'),
@@ -14,21 +15,12 @@ const schema = z.object({
   notes:         z.string().nullable().optional(),
 })
 
-async function getAuthorizedMembership(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {
+async function getAuthorizedUser(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-
-  const { data: membership } = await supabase
-    .from('memberships')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('tenant_id', tenantId)
-    .eq('is_active', true)
-    .single()
-
-  const allowedRoles = ['company_admin', 'dispatcher']
-  if (!membership || !allowedRoles.includes(membership.role)) return null
-  return membership
+  const { data: membership } = await supabase.from('memberships').select('role').eq('user_id', user.id).eq('tenant_id', tenantId).eq('is_active', true).single()
+  if (!membership || !['company_admin', 'dispatcher'].includes(membership.role)) return null
+  return user
 }
 
 export async function createSite(
@@ -40,9 +32,10 @@ export async function createSite(
   if (!parsed.success) return { error: 'Validation failed' }
 
   const supabase = await createClient()
-  if (!await getAuthorizedMembership(supabase, tenantId)) return { error: 'Unauthorized' }
+  const user = await getAuthorizedUser(supabase, tenantId)
+  if (!user) return { error: 'Unauthorized' }
 
-  const { error } = await supabase.from('sites').insert({
+  const { data: site, error } = await supabase.from('sites').insert({
     customer_id:   customerId,
     tenant_id:     tenantId,
     name:          parsed.data.name,
@@ -53,9 +46,10 @@ export async function createSite(
     zip:           parsed.data.zip,
     site_type:     parsed.data.site_type,
     notes:         parsed.data.notes || null,
-  })
+  }).select('id').single()
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'site.created', tenantId, actorId: user.id, actorEmail: user.email, resourceType: 'site', resourceId: site.id, resourceLabel: `${parsed.data.name} — ${parsed.data.city}, ${parsed.data.state}`, metadata: { customer_id: customerId } })
   return { ok: true }
 }
 
@@ -74,7 +68,8 @@ export async function updateSite(siteId: string, formData: z.infer<typeof schema
     .single()
 
   if (!site) return { error: 'Site not found' }
-  if (!await getAuthorizedMembership(supabase, site.tenant_id)) return { error: 'Unauthorized' }
+  const user = await getAuthorizedUser(supabase, site.tenant_id)
+  if (!user) return { error: 'Unauthorized' }
 
   const { error } = await supabase.from('sites').update({
     name:          parsed.data.name,
@@ -88,5 +83,6 @@ export async function updateSite(siteId: string, formData: z.infer<typeof schema
   }).eq('id', siteId)
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'site.updated', tenantId: site.tenant_id, actorId: user.id, actorEmail: user.email, resourceType: 'site', resourceId: siteId, resourceLabel: `${parsed.data.name} — ${parsed.data.city}, ${parsed.data.state}` })
   return { ok: true }
 }

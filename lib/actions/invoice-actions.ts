@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { writeAudit } from '@/lib/audit'
 
 interface LineItem {
   description: string
@@ -25,7 +26,7 @@ export async function createInvoice(
   // Fetch the job to get tenant_id and customer_id
   const { data: job } = await supabase
     .from('jobs')
-    .select('id, tenant_id, customer_id')
+    .select('id, job_number, tenant_id, customer_id')
     .eq('id', jobId)
     .single()
 
@@ -78,6 +79,7 @@ export async function createInvoice(
     .single()
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'invoice.created', tenantId: job.tenant_id, actorId: user.id, actorEmail: user.email, resourceType: 'invoice', resourceId: invoice.id, resourceLabel: invoiceNumber, metadata: { job_id: jobId, total, job_number: job.job_number } })
   return { ok: true, invoiceId: invoice.id }
 }
 
@@ -91,7 +93,7 @@ export async function updateInvoiceStatus(
 
   const { data: invoice } = await supabase
     .from('invoices')
-    .select('id, tenant_id')
+    .select('id, invoice_number, tenant_id, status')
     .eq('id', invoiceId)
     .single()
 
@@ -120,5 +122,6 @@ export async function updateInvoiceStatus(
     .eq('id', invoiceId)
 
   if (error) return { error: error.message }
+  void writeAudit({ action: 'invoice.status_updated', tenantId: invoice.tenant_id, actorId: user.id, actorEmail: user.email, resourceType: 'invoice', resourceId: invoiceId, resourceLabel: invoice.invoice_number, metadata: { from_status: invoice.status, to_status: status } })
   return { ok: true }
 }
