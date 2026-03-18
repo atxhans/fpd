@@ -4,21 +4,23 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Building2, HeadphonesIcon, FileText,
-  Flag, Settings, Users, LogOut, Shield, Inbox,
+  Flag, Settings, Users, LogOut, Shield, Inbox, MessageCircle,
 } from 'lucide-react'
 import { FieldpieceLogo } from './fieldpiece-logo'
+import { ChatInboxBadge } from './chat-inbox-badge'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
-  { href: '/admin/platform',      label: 'Platform Dashboard', icon: LayoutDashboard },
-  { href: '/admin/tenants',       label: 'HVAC Contractors',   icon: Building2 },
-  { href: '/admin/users',         label: 'Users',              icon: Users },
+  { href: '/admin/platform',         label: 'Platform Dashboard', icon: LayoutDashboard },
+  { href: '/admin/tenants',          label: 'HVAC Contractors',   icon: Building2 },
+  { href: '/admin/users',            label: 'Users',              icon: Users },
+  { href: '/admin/support/inbox',    label: 'Live Chat',          icon: MessageCircle, badge: true },
   { href: '/admin/support',          label: 'Support Console',    icon: HeadphonesIcon },
   { href: '/admin/assignment-queue', label: 'Assignment Queue',   icon: Inbox },
-  { href: '/admin/impersonation', label: 'Impersonation',      icon: Shield },
-  { href: '/admin/audit-logs',    label: 'Audit Logs',         icon: FileText },
-  { href: '/admin/feature-flags', label: 'Feature Flags',      icon: Flag },
-  { href: '/admin/settings',      label: 'Platform Settings',  icon: Settings },
+  { href: '/admin/impersonation',    label: 'Impersonation',      icon: Shield },
+  { href: '/admin/audit-logs',       label: 'Audit Logs',         icon: FileText },
+  { href: '/admin/feature-flags',    label: 'Feature Flags',      icon: Flag },
+  { href: '/admin/settings',         label: 'Platform Settings',  icon: Settings },
 ]
 
 interface AdminSidebarProps {
@@ -42,7 +44,7 @@ export function AdminSidebar({ onSignOut }: AdminSidebarProps) {
       </div>
 
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+        {NAV_ITEMS.map(({ href, label, icon: Icon, badge }) => (
           <Link
             key={href}
             href={href}
@@ -55,6 +57,7 @@ export function AdminSidebar({ onSignOut }: AdminSidebarProps) {
           >
             <Icon className="h-5 w-5 shrink-0" />
             {label}
+            {badge && <ChatInboxBadge />}
           </Link>
         ))}
       </nav>

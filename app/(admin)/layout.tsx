@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AdminSidebar } from '@/components/layout/admin-sidebar'
 import { AdminTopNav } from '@/components/layout/admin-top-nav'
+import { PushRegistration } from '@/components/support/push-registration'
 import type { Profile } from '@/types/user'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +31,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {children}
         </main>
       </div>
+      <PushRegistration userId={user.id} />
     </div>
   )
 }

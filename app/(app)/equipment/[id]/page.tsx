@@ -2,14 +2,45 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
 import { EquipmentEditForm } from './equipment-edit-form'
+import { EquipmentTabs } from './equipment-tabs'
+import type { ReadingRow, ReadingTypeStats } from './equipment-tabs'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Equipment Detail' }
+
+// ─── Fleet stats helper ────────────────────────────────────────────────────
+
+type RawReading = { value: number | null; reading_types: { key: string; label: string; unit: string } | null }
+
+function computeFleetStats(raw: RawReading[]) {
+  const grouped: Record<string, { key: string; label: string; unit: string; values: number[] }> = {}
+  for (const r of raw) {
+    if (r.value == null || !r.reading_types) continue
+    const { key, label, unit } = r.reading_types
+    if (!grouped[key]) grouped[key] = { key, label, unit, values: [] }
+    grouped[key].values.push(r.value)
+  }
+  const result: Record<string, { avg: number; min: number; max: number; p25: number; p75: number; count: number }> = {}
+  for (const [key, { values }] of Object.entries(grouped)) {
+    values.sort((a, b) => a - b)
+    const n = values.length
+    result[key] = {
+      avg: values.reduce((s, v) => s + v, 0) / n,
+      min: values[0],
+      max: values[n - 1],
+      p25: values[Math.floor(n * 0.25)],
+      p75: values[Math.floor(n * 0.75)],
+      count: n,
+    }
+  }
+  return result
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────
 
 export default async function EquipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -32,10 +63,9 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
       .order('created_at', { ascending: false })
       .limit(10),
     supabase.from('readings')
-      .select('*, reading_types(label, unit)')
+      .select('*, reading_types(key, label, unit, category, normal_min, normal_max), jobs(job_number, scheduled_at)')
       .eq('equipment_id', id)
-      .order('captured_at', { ascending: false })
-      .limit(20),
+      .order('captured_at', { ascending: true }),
   ])
 
   if (!eqResult.data) notFound()
@@ -44,10 +74,82 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
   const jobs = (jobEquipmentResult.data ?? [])
     .map((je) => je.jobs as unknown as { id: string; job_number: string; status: string; scheduled_at: string | null; service_category: string } | null)
     .filter((j): j is { id: string; job_number: string; status: string; scheduled_at: string | null; service_category: string } => j !== null)
-  const readings = readingsResult.data ?? []
+  const readings = (readingsResult.data ?? []) as unknown as ReadingRow[]
   const customer = eq.customers as unknown as Record<string, unknown>
   const site = eq.sites as unknown as Record<string, unknown>
   const canEdit = ['company_admin', 'dispatcher'].includes(membership?.role ?? '')
+
+  // ─── Fleet comparison queries ───────────────────────────────────────────
+
+  // 1. Same model (only if model_number is set)
+  const hasModel = !!eq.model_number
+  const [sameModelEqResult, sameTypeEqResult, preFailureEqResult] = await Promise.all([
+    hasModel
+      ? supabase.from('equipment').select('id').eq('tenant_id', tenantId).eq('model_number', eq.model_number!).neq('id', id).is('deleted_at', null)
+      : Promise.resolve({ data: [] }),
+    supabase.from('equipment').select('id').eq('tenant_id', tenantId).eq('unit_type', eq.unit_type).neq('id', id).is('deleted_at', null),
+    supabase.from('equipment').select('id').eq('tenant_id', tenantId).in('status', ['retired', 'decommissioned']).is('deleted_at', null),
+  ])
+
+  const sameModelIds = (sameModelEqResult.data ?? []).map(e => e.id)
+  const sameTypeIds = (sameTypeEqResult.data ?? []).map(e => e.id)
+  const preFailureIds = (preFailureEqResult.data ?? []).map(e => e.id)
+
+  // Fetch readings for each comparison group in parallel
+  type FleetReading = { value: number | null; reading_types: { key: string; label: string; unit: string } | null }
+  const readingSelect = 'value, reading_types(key, label, unit)'
+
+  const [sameModelRaw, sameTypeRaw, healthyRaw, preFailureRaw] = await Promise.all([
+    sameModelIds.length > 0
+      ? supabase.from('readings').select(readingSelect).in('equipment_id', sameModelIds).not('value', 'is', null).limit(2000)
+      : Promise.resolve({ data: [] }),
+    sameTypeIds.length > 0
+      ? supabase.from('readings').select(readingSelect).in('equipment_id', sameTypeIds).not('value', 'is', null).limit(2000)
+      : Promise.resolve({ data: [] }),
+    // Healthy: readings where is_flagged = false across this tenant's equipment
+    supabase.from('readings').select(readingSelect).eq('tenant_id', tenantId).eq('is_flagged', false).not('value', 'is', null).limit(2000),
+    preFailureIds.length > 0
+      ? supabase.from('readings').select(readingSelect).in('equipment_id', preFailureIds).not('value', 'is', null).limit(2000)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const sameModelStats = computeFleetStats((sameModelRaw.data ?? []) as unknown as FleetReading[])
+  const sameTypeStats = computeFleetStats((sameTypeRaw.data ?? []) as unknown as FleetReading[])
+  const healthyStats = computeFleetStats((healthyRaw.data ?? []) as unknown as FleetReading[])
+  const preFailureStats = computeFleetStats((preFailureRaw.data ?? []) as unknown as FleetReading[])
+
+  // Compute "this unit" stats
+  const thisUnitRaw: FleetReading[] = readings
+    .filter(r => r.value != null && r.reading_types)
+    .map(r => ({ value: r.value, reading_types: r.reading_types ? { key: r.reading_types.key, label: r.reading_types.label, unit: r.reading_types.unit } : null }))
+  const thisUnitStats = computeFleetStats(thisUnitRaw)
+
+  // Build unified stats array per reading type
+  const allKeys = new Set([
+    ...Object.keys(thisUnitStats),
+    ...Object.keys(sameModelStats),
+    ...Object.keys(sameTypeStats),
+    ...Object.keys(healthyStats),
+    ...Object.keys(preFailureStats),
+  ])
+  const stats: ReadingTypeStats[] = []
+  for (const key of allKeys) {
+    // Get label/unit from readings
+    const rt = readings.find(r => r.reading_types?.key === key)?.reading_types
+    if (!rt) continue
+    stats.push({
+      key,
+      label: rt.label,
+      unit: rt.unit,
+      thisUnit: thisUnitStats[key] ? { avg: thisUnitStats[key].avg, min: thisUnitStats[key].min, max: thisUnitStats[key].max, count: thisUnitStats[key].count } : null,
+      sameModel: sameModelStats[key] ?? null,
+      sameType: sameTypeStats[key] ?? null,
+      healthy: healthyStats[key] ?? null,
+      preFailure: preFailureStats[key] ?? null,
+    })
+  }
+
+  // ─── Render ─────────────────────────────────────────────────────────────
 
   const details = [
     { label: 'Manufacturer', value: eq.manufacturer },
@@ -88,7 +190,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Equipment Details */}
+        {/* Main content: details + readings tabs */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader><CardTitle>Equipment Details</CardTitle></CardHeader>
@@ -106,32 +208,21 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Recent Readings */}
           {readings.length > 0 && (
             <Card>
-              <CardHeader><CardTitle>Recent Readings</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Readings</CardTitle></CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {readings.slice(0, 9).map((r: Record<string, unknown>) => {
-                    const rt = r.reading_types as { label: string; unit: string } | null
-                    return (
-                      <div key={r.id as string} className="p-3 border border-border rounded-lg">
-                        <p className="text-xs text-muted-foreground">{rt?.label}</p>
-                        <p className="text-xl font-bold">
-                          {r.value != null ? r.value as number : '—'}
-                          <span className="text-sm font-normal text-muted-foreground ml-1">{rt?.unit}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">{formatDateTime(r.captured_at as string)}</p>
-                      </div>
-                    )
-                  })}
-                </div>
+                <EquipmentTabs
+                  readings={readings}
+                  stats={stats}
+                  hasModelComparison={sameModelIds.length > 0}
+                />
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Service History */}
+        {/* Sidebar */}
         <div className="space-y-6">
           <Card>
             <CardHeader><CardTitle>Customer</CardTitle></CardHeader>

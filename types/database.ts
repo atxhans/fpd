@@ -677,6 +677,8 @@ export interface Database {
           unit: string
           category: string | null
           sort_order: number
+          normal_min: number | null
+          normal_max: number | null
           created_at: string
         }
         Insert: {
@@ -685,6 +687,8 @@ export interface Database {
           unit: string
           category?: string | null
           sort_order?: number
+          normal_min?: number | null
+          normal_max?: number | null
         }
         Update: {
           key?: string
@@ -692,6 +696,8 @@ export interface Database {
           unit?: string
           category?: string | null
           sort_order?: number
+          normal_min?: number | null
+          normal_max?: number | null
         }
         Relationships: []
       }
@@ -952,6 +958,94 @@ export interface Database {
             referencedRelation: 'customers'
             referencedColumns: ['id']
           }
+        ]
+      }
+      chat_conversations: {
+        Row: {
+          id: string
+          tenant_id: string
+          user_id: string
+          assigned_agent_id: string | null
+          status: 'open' | 'active' | 'closed'
+          unread_by_agent: number
+          unread_by_user: number
+          last_message_at: string
+          created_at: string
+          closed_at: string | null
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          user_id: string
+          assigned_agent_id?: string | null
+          status?: 'open' | 'active' | 'closed'
+          unread_by_agent?: number
+          unread_by_user?: number
+          last_message_at?: string
+          closed_at?: string | null
+        }
+        Update: {
+          assigned_agent_id?: string | null
+          status?: 'open' | 'active' | 'closed'
+          unread_by_agent?: number
+          unread_by_user?: number
+          last_message_at?: string
+          closed_at?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: 'chat_conversations_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] },
+          { foreignKeyName: 'chat_conversations_user_id_fkey'; columns: ['user_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+          { foreignKeyName: 'chat_conversations_assigned_agent_id_fkey'; columns: ['assigned_agent_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          sender_id: string
+          sender_role: 'user' | 'agent'
+          body: string
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          sender_id: string
+          sender_role: 'user' | 'agent'
+          body: string
+          read_at?: string | null
+        }
+        Update: {
+          read_at?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: 'chat_messages_conversation_id_fkey'; columns: ['conversation_id']; isOneToOne: false; referencedRelation: 'chat_conversations'; referencedColumns: ['id'] },
+          { foreignKeyName: 'chat_messages_sender_id_fkey'; columns: ['sender_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+        }
+        Update: {
+          p256dh?: string
+          auth?: string
+        }
+        Relationships: [
+          { foreignKeyName: 'push_subscriptions_user_id_fkey'; columns: ['user_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
         ]
       }
     }
