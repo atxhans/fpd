@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Tenant Management' }
+export const metadata: Metadata = { title: 'HVAC Contractors' }
 
 export default async function TenantsPage() {
   const supabase = await createClient()
@@ -20,7 +20,7 @@ export default async function TenantsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <PageHeader title="Tenant Management" subtitle={`${tenants?.length ?? 0} tenants on platform`} />
+      <PageHeader title="HVAC Contractors" subtitle={`${tenants?.length ?? 0} contractors on platform`} />
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">

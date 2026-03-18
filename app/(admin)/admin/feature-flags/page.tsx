@@ -23,7 +23,7 @@ export default async function FeatureFlagsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <PageHeader title="Feature Flags" subtitle="Control feature rollout globally and per tenant" />
+      <PageHeader title="Feature Flags" subtitle="Control feature rollout globally and per HVAC contractor" />
 
       <Card>
         <CardHeader><CardTitle>Global Platform Flags</CardTitle></CardHeader>
@@ -47,16 +47,16 @@ export default async function FeatureFlagsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Per-Tenant Flag Overrides</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Per-Contractor Flag Overrides</CardTitle></CardHeader>
         <CardContent>
           {tenantFlags.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No per-tenant overrides set</p>
+            <p className="text-sm text-muted-foreground">No per-contractor overrides set</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-2 px-3 font-semibold">Tenant</th>
+                    <th className="text-left py-2 px-3 font-semibold">HVAC Contractor</th>
                     <th className="text-left py-2 px-3 font-semibold">Flag</th>
                     <th className="text-left py-2 px-3 font-semibold">State</th>
                   </tr>

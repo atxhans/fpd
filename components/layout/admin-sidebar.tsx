@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { href: '/admin/platform',      label: 'Platform Dashboard', icon: LayoutDashboard },
-  { href: '/admin/tenants',       label: 'Tenants',            icon: Building2 },
+  { href: '/admin/tenants',       label: 'HVAC Contractors',   icon: Building2 },
   { href: '/admin/users',         label: 'Users',              icon: Users },
   { href: '/admin/support',          label: 'Support Console',    icon: HeadphonesIcon },
   { href: '/admin/assignment-queue', label: 'Assignment Queue',   icon: Inbox },

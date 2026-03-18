@@ -110,7 +110,7 @@ function InviteSheet({ tenants, onClose }: { tenants: Tenant[]; onClose: () => v
                 userType === type ? 'bg-black text-primary border-black' : 'border-border hover:bg-muted'
               )}
             >
-              {type === 'platform' ? 'Fieldpiece Staff' : 'Tenant User'}
+              {type === 'platform' ? 'Fieldpiece Staff' : 'HVAC Contractor'}
             </button>
           ))}
         </div>
@@ -138,7 +138,7 @@ function InviteSheet({ tenants, onClose }: { tenants: Tenant[]; onClose: () => v
       {userType === 'tenant' && (
         <>
           <div className="space-y-1.5">
-            <Label>Tenant</Label>
+            <Label>HVAC Contractor</Label>
             <Select onValueChange={(v) => {
               setValue('tenantId', String(v))
               setTenantLabel(tenants.find(t => t.id === String(v))?.name ?? '')
@@ -146,7 +146,7 @@ function InviteSheet({ tenants, onClose }: { tenants: Tenant[]; onClose: () => v
               <SelectTrigger>
                 {tenantLabel
                   ? <span className="flex flex-1 text-left text-sm truncate">{tenantLabel}</span>
-                  : <SelectValue placeholder="Select tenant…" />}
+                  : <SelectValue placeholder="Select HVAC contractor…" />}
               </SelectTrigger>
               <SelectContent>
                 {tenants.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
@@ -388,7 +388,7 @@ export function UsersClient({ users, tenants }: UsersClientProps) {
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={u.is_platform_user ? 'default' : 'outline'} className={u.is_platform_user ? 'bg-black text-primary' : ''}>
-                          {u.is_platform_user ? 'Fieldpiece' : 'Tenant'}
+                          {u.is_platform_user ? 'Fieldpiece' : 'HVAC Contractor'}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">

@@ -28,7 +28,7 @@ export default async function PlatformDashboardPage() {
       <PageHeader title="Platform Dashboard" subtitle="Fieldpiece Digital platform overview" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <MetricCard title="Active Tenants"      value={tenantsResult.count ?? 0}  icon={Building2} />
+        <MetricCard title="Active Contractors"      value={tenantsResult.count ?? 0}  icon={Building2} />
         <MetricCard title="Active Users"        value={usersResult.count ?? 0}    icon={Users} />
         <MetricCard title="Jobs Today"          value={jobsResult.count ?? 0}     icon={Briefcase} />
         <MetricCard title="Readings Today"      value={readingsResult.count ?? 0} icon={Activity} />
@@ -38,7 +38,7 @@ export default async function PlatformDashboardPage() {
       <PlatformCharts />
 
       <Card>
-        <CardHeader><CardTitle>Recent Tenants</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Recent HVAC Contractors</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-3">
             {(recentTenantsResult.data ?? []).map((t: Record<string, unknown>) => (

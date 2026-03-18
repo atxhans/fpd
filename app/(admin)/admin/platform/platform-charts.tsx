@@ -44,7 +44,7 @@ export default function PlatformCharts() {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle>Most Active Tenants</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Most Active HVAC Contractors</CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={TENANT_ACTIVITY}>

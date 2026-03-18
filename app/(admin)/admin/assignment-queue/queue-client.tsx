@@ -58,11 +58,11 @@ function SRRow({ sr, tenants }: { sr: ServiceRequest; tenants: Tenant[] }) {
   const [techLabel, setTechLabel] = useState('')
 
   function handleAssign() {
-    if (!selectedTenant) { toast.error('Select a tenant first'); return }
+    if (!selectedTenant) { toast.error('Select an HVAC contractor first'); return }
     startTransition(async () => {
       const result = await assignServiceRequest(sr.id, selectedTenant)
       if (result.error) { toast.error(result.error); return }
-      toast.success(result.customerMatched ? 'Assigned and matched to existing customer' : 'Assigned to tenant')
+      toast.success(result.customerMatched ? 'Assigned and matched to existing customer' : 'Assigned to HVAC contractor')
       router.refresh()
     })
   }
@@ -106,7 +106,7 @@ function SRRow({ sr, tenants }: { sr: ServiceRequest; tenants: Tenant[] }) {
           <SelectTrigger className="w-52">
             {techLabel
               ? <span className="flex flex-1 text-left text-sm truncate">{techLabel}</span>
-              : <SelectValue placeholder="Assign to tenant…" />}
+              : <SelectValue placeholder="Assign to HVAC contractor…" />}
           </SelectTrigger>
           <SelectContent>
             {tenants.map(t => (
@@ -140,7 +140,7 @@ function CustomerRow({ customer, tenants }: { customer: Customer; tenants: Tenan
   const [confirming, setConfirming] = useState(false)
 
   function handleReassign() {
-    if (!selectedTenant) { toast.error('Select a target tenant'); return }
+    if (!selectedTenant) { toast.error('Select a target HVAC contractor'); return }
     if (!confirming) { setConfirming(true); return }
     startTransition(async () => {
       const result = await reassignCustomer(customer.id, selectedTenant)
@@ -166,7 +166,7 @@ function CustomerRow({ customer, tenants }: { customer: Customer; tenants: Tenan
             <Badge variant="outline" className="text-xs capitalize">{customer.customer_type}</Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            Current tenant: <span className="font-medium">{customer.tenants?.name ?? 'Unknown'}</span>
+            HVAC contractor: <span className="font-medium">{customer.tenants?.name ?? 'Unknown'}</span>
           </p>
         </div>
       </div>
@@ -183,7 +183,7 @@ function CustomerRow({ customer, tenants }: { customer: Customer; tenants: Tenan
           <SelectTrigger className="w-52">
             {tenantLabel
               ? <span className="flex flex-1 text-left text-sm truncate">{tenantLabel}</span>
-              : <SelectValue placeholder="Move to tenant…" />}
+              : <SelectValue placeholder="Move to HVAC contractor…" />}
           </SelectTrigger>
           <SelectContent>
             {tenants.filter(t => t.id !== customer.tenant_id).map(t => (
@@ -263,7 +263,7 @@ export function QueueClient({ serviceRequests, customers, tenants }: QueueClient
             {serviceRequests.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <Inbox className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">All service requests are assigned to a tenant.</p>
+                <p className="text-sm">All service requests are assigned to an HVAC contractor.</p>
               </div>
             ) : (
               <div>

@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/utils'
 import { getRoleLabel } from '@/types/user'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Tenant Detail' }
+export const metadata: Metadata = { title: 'Contractor Detail' }
 
 export default async function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -40,7 +40,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <div className="lg:col-span-2 space-y-6">
           {/* Details */}
           <Card>
-            <CardHeader><CardTitle>Tenant Details</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Contractor Details</CardTitle></CardHeader>
             <CardContent>
               <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {[

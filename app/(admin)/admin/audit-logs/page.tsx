@@ -25,7 +25,7 @@ export default async function AuditLogsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <PageHeader title="Audit Logs" subtitle="Immutable record of all platform and tenant actions" />
+      <PageHeader title="Audit Logs" subtitle="Immutable record of all platform and HVAC contractor actions" />
 
       <Card>
         <CardContent className="p-0">
@@ -36,7 +36,7 @@ export default async function AuditLogsPage() {
                   <th className="text-left px-4 py-3 font-semibold">Time</th>
                   <th className="text-left px-4 py-3 font-semibold">Action</th>
                   <th className="text-left px-4 py-3 font-semibold">Actor</th>
-                  <th className="text-left px-4 py-3 font-semibold">Tenant</th>
+                  <th className="text-left px-4 py-3 font-semibold">HVAC Contractor</th>
                   <th className="text-left px-4 py-3 font-semibold">Resource</th>
                   <th className="text-left px-4 py-3 font-semibold">Flags</th>
                 </tr>
