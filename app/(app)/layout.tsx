@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { AppTopNav } from '@/components/layout/app-top-nav'
+import { HelpWidget } from '@/components/support/help-widget'
 import type { Profile } from '@/types/user'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+      <HelpWidget
+        userEmail={profile?.email ?? ''}
+        userName={[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
+      />
     </div>
   )
 }

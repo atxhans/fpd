@@ -703,6 +703,7 @@ export interface Database {
           assigned_to: string | null
           subject: string
           description: string | null
+          page_url: string | null
           status: 'open' | 'in_progress' | 'resolved' | 'closed'
           priority: 'low' | 'medium' | 'high' | 'critical'
           created_at: string
@@ -714,6 +715,7 @@ export interface Database {
           assigned_to?: string | null
           subject: string
           description?: string | null
+          page_url?: string | null
           status?: 'open' | 'in_progress' | 'resolved' | 'closed'
           priority?: 'low' | 'medium' | 'high' | 'critical'
         }
@@ -721,8 +723,29 @@ export interface Database {
           assigned_to?: string | null
           subject?: string
           description?: string | null
+          page_url?: string | null
           status?: 'open' | 'in_progress' | 'resolved' | 'closed'
           priority?: 'low' | 'medium' | 'high' | 'critical'
+        }
+        Relationships: []
+      }
+      support_case_comments: {
+        Row: {
+          id: string
+          case_id: string
+          author_id: string
+          body: string
+          is_internal: boolean
+          created_at: string
+        }
+        Insert: {
+          case_id: string
+          author_id: string
+          body: string
+          is_internal?: boolean
+        }
+        Update: {
+          body?: string
         }
         Relationships: []
       }
