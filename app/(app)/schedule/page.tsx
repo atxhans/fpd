@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/shared/page-header'
 import { ScheduleContainer } from '@/components/schedule/schedule-container'
+import { getTodayInTimezone, getDayBoundsUTC, DEFAULT_TIMEZONE } from '@/lib/timezone'
 import type { ViewType, WeatherSnapshot } from '@/components/schedule/types'
 import type { Metadata } from 'next'
 
@@ -12,7 +13,8 @@ interface SearchParams {
   view?: string
 }
 
-function getDateRange(date: string, view: string): { start: string; end: string } {
+/** Returns the Mon–Sun or first–last YYYY-MM-DD range for a given view. */
+function getViewDateRange(date: string, view: string): { start: string; end: string } {
   if (view === 'week') {
     const d = new Date(`${date}T12:00:00`)
     const day = d.getDay()
@@ -45,19 +47,33 @@ export default async function SchedulePage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: membership } = await supabase
-    .from('memberships')
-    .select('tenant_id, role')
-    .eq('user_id', user.id)
-    .eq('is_active', true)
-    .single()
+  const [membershipResult, profileResult] = await Promise.all([
+    supabase
+      .from('memberships')
+      .select('tenant_id, role')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .single(),
+    supabase
+      .from('profiles')
+      .select('timezone')
+      .eq('id', user.id)
+      .single(),
+  ])
 
-  const tenantId = membership?.tenant_id
+  const tenantId = membershipResult.data?.tenant_id
   if (!tenantId) redirect('/login')
 
-  const date = params.date ?? new Date().toISOString().split('T')[0]
+  const tz = profileResult.data?.timezone ?? DEFAULT_TIMEZONE
+
+  // Default to today in the user's timezone (not UTC)
+  const date = params.date ?? getTodayInTimezone(tz)
   const view = (params.view ?? 'board') as ViewType
-  const { start, end } = getDateRange(date, view)
+
+  // Date range as YYYY-MM-DD strings, then converted to UTC ISO bounds
+  const { start: startDate, end: endDate } = getViewDateRange(date, view)
+  const { start: startUTC } = getDayBoundsUTC(startDate, tz)
+  const { end: endUTC } = getDayBoundsUTC(endDate, tz)
 
   const [jobsResult, techsResult] = await Promise.all([
     supabase
@@ -65,8 +81,8 @@ export default async function SchedulePage({
       .select('id, job_number, status, priority, scheduled_at, service_category, assigned_technician_id, weather_snapshot, customers(name), sites(name, city, state), profiles!jobs_assigned_technician_id_fkey(first_name, last_name)')
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
-      .gte('scheduled_at', `${start}T00:00:00+00:00`)
-      .lte('scheduled_at', `${end}T23:59:59+00:00`)
+      .gte('scheduled_at', startUTC)
+      .lte('scheduled_at', endUTC)
       .order('scheduled_at', { ascending: true }),
     supabase
       .from('memberships')
@@ -114,7 +130,7 @@ export default async function SchedulePage({
         title="Schedule"
         subtitle="Dispatch board — view and manage daily job assignments"
       />
-      <ScheduleContainer jobs={jobs} date={date} view={view} technicians={technicians} />
+      <ScheduleContainer jobs={jobs} date={date} view={view} technicians={technicians} timezone={tz} />
     </div>
   )
 }

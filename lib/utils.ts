@@ -5,16 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDate(date: string | Date | null | undefined): string {
+export function formatDate(
+  date: string | Date | null | undefined,
+  timezone?: string,
+): string {
   if (!date) return '—'
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    ...(timezone ? { timeZone: timezone } : {}),
   }).format(new Date(date))
 }
 
-export function formatDateTime(date: string | Date | null | undefined): string {
+export function formatDateTime(
+  date: string | Date | null | undefined,
+  timezone?: string,
+): string {
   if (!date) return '—'
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -22,6 +29,7 @@ export function formatDateTime(date: string | Date | null | undefined): string {
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    ...(timezone ? { timeZone: timezone } : {}),
   }).format(new Date(date))
 }
 

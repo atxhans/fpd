@@ -8,12 +8,14 @@ import { CalendarDayView } from './calendar-day-view'
 import { CalendarWeekView } from './calendar-week-view'
 import { CalendarMonthView } from './calendar-month-view'
 import type { JobEntry, Technician, ViewType } from './types'
+import { DEFAULT_TIMEZONE, getTodayInTimezone } from '@/lib/timezone'
 
 interface ScheduleContainerProps {
   jobs: JobEntry[]
   date: string
   view: ViewType
   technicians: Technician[]
+  timezone?: string
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -61,11 +63,6 @@ function formatHeader(date: string, view: ViewType): string {
   })
 }
 
-function localToday(): string {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-}
-
 const VIEWS: { key: ViewType; label: string }[] = [
   { key: 'board', label: 'Board' },
   { key: 'day', label: 'Day' },
@@ -73,7 +70,7 @@ const VIEWS: { key: ViewType; label: string }[] = [
   { key: 'month', label: 'Month' },
 ]
 
-export function ScheduleContainer({ jobs, date, view, technicians }: ScheduleContainerProps) {
+export function ScheduleContainer({ jobs, date, view, technicians, timezone = DEFAULT_TIMEZONE }: ScheduleContainerProps) {
   const router = useRouter()
 
   function navigate(newDate: string, newView: ViewType = view) {
@@ -121,7 +118,7 @@ export function ScheduleContainer({ jobs, date, view, technicians }: ScheduleCon
           <Button variant="outline" size="icon-sm" onClick={goNext}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate(localToday())}>
+          <Button variant="outline" size="sm" onClick={() => navigate(getTodayInTimezone(timezone))}>
             Today
           </Button>
         </div>

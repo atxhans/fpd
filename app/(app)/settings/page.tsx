@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
 import { APP_URL } from '@/lib/constants'
 import { ServiceRequestLinks } from './service-request-links'
+import { TimezoneSelect } from './timezone-select'
+import { DEFAULT_TIMEZONE } from '@/lib/timezone'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Settings' }
@@ -66,6 +68,12 @@ export default async function SettingsPage() {
                   <dd className="text-sm font-medium capitalize">{String(value ?? '—')}</dd>
                 </div>
               ))}
+              <div className="flex justify-between items-center py-1">
+                <dt className="text-sm text-muted-foreground">Timezone</dt>
+                <dd>
+                  <TimezoneSelect currentTimezone={profile?.timezone ?? DEFAULT_TIMEZONE} />
+                </dd>
+              </div>
             </dl>
           </CardContent>
         </Card>

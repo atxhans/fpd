@@ -97,6 +97,7 @@ export interface Database {
           is_active: boolean
           last_sign_in_at: string | null
           metadata: Json
+          timezone: string
           created_at: string
           updated_at: string
         }
@@ -112,6 +113,7 @@ export interface Database {
           is_active?: boolean
           last_sign_in_at?: string | null
           metadata?: Json
+          timezone?: string
         }
         Update: {
           email?: string
@@ -124,6 +126,7 @@ export interface Database {
           is_active?: boolean
           last_sign_in_at?: string | null
           metadata?: Json
+          timezone?: string
         }
         Relationships: []
       }
