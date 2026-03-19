@@ -308,6 +308,10 @@ export interface Database {
           status: 'active' | 'retired' | 'decommissioned'
           notes: string | null
           metadata: Json
+          ai_summary: Json | null
+          ai_summary_generated_at: string | null
+          health_score: number | null
+          health_score_at: string | null
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -331,6 +335,10 @@ export interface Database {
           status?: 'active' | 'retired' | 'decommissioned'
           notes?: string | null
           metadata?: Json
+          ai_summary?: Json | null
+          ai_summary_generated_at?: string | null
+          health_score?: number | null
+          health_score_at?: string | null
           deleted_at?: string | null
         }
         Update: {
@@ -349,6 +357,10 @@ export interface Database {
           status?: 'active' | 'retired' | 'decommissioned'
           notes?: string | null
           metadata?: Json
+          ai_summary?: Json | null
+          ai_summary_generated_at?: string | null
+          health_score?: number | null
+          health_score_at?: string | null
           deleted_at?: string | null
         }
         Relationships: [

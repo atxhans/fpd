@@ -10,6 +10,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { formatDateTime } from '@/lib/utils'
 import { weatherEmoji, type WeatherSnapshot } from '@/lib/openweather'
+import { computeTrends } from '@/lib/health/trend'
+import type { TrendResult } from '@/types/health'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -190,6 +192,13 @@ function HistoryTab({ readings }: { readings: ReadingRow[] }) {
 
   const hasWeather = chartData.some(d => d.weather != null)
 
+  // Trend analysis
+  const trends = useMemo<TrendResult[]>(() => computeTrends(chartData, allTypes), [chartData, allTypes])
+  const urgentTrends = useMemo(
+    () => trends.filter(t => (t.daysToMin != null && t.daysToMin < 60) || (t.daysToMax != null && t.daysToMax < 60)),
+    [trends],
+  )
+
   // Determine Y axes: pressure (psi/in_wg) vs temperature (F) vs other
   const pressureKeys = new Set(allTypes.filter(rt => ['psi', 'in_wg'].includes(rt.unit)).map(rt => rt.key))
   const activeList = allTypes.filter(rt => activeKeys.has(rt.key))
@@ -219,6 +228,22 @@ function HistoryTab({ readings }: { readings: ReadingRow[] }) {
           </button>
         ))}
       </div>
+
+      {/* Trend alerts */}
+      {urgentTrends.length > 0 && (
+        <div className="rounded-md border border-orange-200 bg-orange-50/60 px-3 py-2 space-y-1">
+          <p className="text-xs font-semibold text-orange-800">Trend Alerts</p>
+          {urgentTrends.map(t => {
+            const days = t.daysToMin ?? t.daysToMax
+            const bound = t.daysToMin != null ? 'minimum' : 'maximum'
+            return (
+              <p key={t.key} className="text-xs text-orange-700">
+                <span className="font-medium">{t.label}</span> trending {t.direction} — estimated to breach {bound} in ~{days} days
+              </p>
+            )
+          })}
+        </div>
+      )}
 
       {/* Chart */}
       <div className="h-72">

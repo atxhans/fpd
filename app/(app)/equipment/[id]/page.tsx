@@ -7,7 +7,11 @@ import { formatDate, formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
 import { EquipmentEditForm } from './equipment-edit-form'
 import { EquipmentTabs } from './equipment-tabs'
+import { HealthScoreCard } from './health-score-card'
+import { AiSummaryCard } from './ai-summary-card'
 import type { ReadingRow, ReadingTypeStats } from './equipment-tabs'
+import { computeHealthScore } from '@/lib/health/score'
+import type { AiSummary } from '@/types/health'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Equipment Detail' }
@@ -53,12 +57,12 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
   const tenantId = membership?.tenant_id
   if (!tenantId) redirect('/login')
 
-  const [eqResult, jobEquipmentResult, readingsResult] = await Promise.all([
+  const [eqResult, jobEquipmentResult, readingsResult, diagnosticsResult] = await Promise.all([
     supabase.from('equipment')
       .select('*, customers(name, email, phone), sites(name, address_line1, city, state, zip)')
       .eq('id', id).eq('tenant_id', tenantId).is('deleted_at', null).single(),
     supabase.from('job_equipment')
-      .select('jobs(id, job_number, status, scheduled_at, service_category)')
+      .select('jobs(id, job_number, status, scheduled_at, service_category, completed_at)')
       .eq('equipment_id', id)
       .order('created_at', { ascending: false })
       .limit(10),
@@ -66,15 +70,27 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
       .select('*, reading_types(key, label, unit, category, normal_min, normal_max), jobs(job_number, scheduled_at, weather_snapshot)')
       .eq('equipment_id', id)
       .order('captured_at', { ascending: true }),
+    supabase.from('diagnostic_results')
+      .select('severity, created_at, title')
+      .eq('equipment_id', id)
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
 
   if (!eqResult.data) notFound()
 
   const eq = eqResult.data
   const jobs = (jobEquipmentResult.data ?? [])
-    .map((je) => je.jobs as unknown as { id: string; job_number: string; status: string; scheduled_at: string | null; service_category: string } | null)
-    .filter((j): j is { id: string; job_number: string; status: string; scheduled_at: string | null; service_category: string } => j !== null)
+    .map((je) => je.jobs as unknown as { id: string; job_number: string; status: string; scheduled_at: string | null; service_category: string; completed_at: string | null } | null)
+    .filter((j): j is { id: string; job_number: string; status: string; scheduled_at: string | null; service_category: string; completed_at: string | null } => j !== null)
   const readings = (readingsResult.data ?? []) as unknown as ReadingRow[]
+  const diagnosticResults = (diagnosticsResult.data ?? []) as unknown as { severity: string; created_at: string; title: string }[]
+
+  const healthBreakdown = computeHealthScore(
+    readings.map(r => ({ value: r.value, captured_at: r.captured_at, is_flagged: r.is_flagged, reading_types: r.reading_types ? { key: r.reading_types.key } : null })),
+    diagnosticResults,
+    jobs.map(j => ({ completed_at: j.completed_at, service_category: j.service_category })),
+  )
   const customer = eq.customers as unknown as Record<string, unknown>
   const site = eq.sites as unknown as Record<string, unknown>
   const canEdit = ['company_admin', 'dispatcher'].includes(membership?.role ?? '')
@@ -220,10 +236,17 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
               </CardContent>
             </Card>
           )}
+
+          <AiSummaryCard
+            equipmentId={id}
+            initialSummary={(eq.ai_summary ?? null) as AiSummary | null}
+          />
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
+          <HealthScoreCard breakdown={healthBreakdown} />
+
           <Card>
             <CardHeader><CardTitle>Customer</CardTitle></CardHeader>
             <CardContent className="space-y-1">

@@ -183,18 +183,18 @@ BEGIN
      'completed', '2025-10-14 09:00:00', '2025-10-14 09:30:00', '2025-10-14 13:00:00'),
 
     (v_jh23, v_tenant_id, 'JOB-H023', v_c9, v_s9, v_tech1_id, v_owner_id,
-     'maintenance', 'urgent', 'Facility reporting unit barely cooling.',
+     'maintenance', 'emergency', 'Facility reporting unit barely cooling.',
      'Critical readings across all parameters. Compressor drawing 25.7A. Unit operating well below design spec. Replacement approved by customer.',
      'completed', '2025-11-11 09:00:00', '2025-11-11 09:30:00', '2025-11-11 12:00:00'),
 
     (v_jh24, v_tenant_id, 'JOB-H024', v_c9, v_s9, v_tech2_id, v_owner_id,
-     'maintenance', 'urgent', 'Monthly inspection while awaiting replacement unit.',
+     'maintenance', 'emergency', 'Monthly inspection while awaiting replacement unit.',
      'Continued deterioration. Suction 48 PSI, discharge 290 PSI, amps 26.4A. Replacement ETA 3 weeks.',
      'completed', '2025-12-09 09:00:00', '2025-12-09 09:30:00', '2025-12-09 11:00:00'),
 
     -- 2026 ──────────────────────────────────────────────────────────────────
     (v_jh25, v_tenant_id, 'JOB-H025', v_c9, v_s9, v_tech1_id, v_owner_id,
-     'maintenance', 'urgent', 'Emergency check — facility reports unit stopped cooling overnight.',
+     'maintenance', 'emergency', 'Emergency check — facility reports unit stopped cooling overnight.',
      'Unit running but severely degraded. Suction 46 PSI, discharge 295 PSI, amps 27.1A. Replacement parts on order.',
      'completed', '2026-01-14 09:00:00', '2026-01-14 09:30:00', '2026-01-14 11:00:00'),
 
@@ -691,81 +691,99 @@ BEGIN
   -- DIAGNOSTIC RESULTS for flagged visits
   -- ──────────────────────────────────────────────────────────────────────────
 
-  INSERT INTO diagnostic_results (tenant_id, job_id, rule_key, severity, message, detail, source)
+  INSERT INTO diagnostic_results (tenant_id, job_id, equipment_id, severity, title, description, recommendation, source)
   VALUES
     -- Apr 2024
-    (v_tenant_id, v_jh04, 'low_suction_pressure', 'warning',
+    (v_tenant_id, v_jh04, v_e10, 'warning',
      'Low suction pressure indicates refrigerant undercharge',
-     'Suction 54 PSI (normal 55–75). Added 1.2 lbs R-410A.', 'rules_engine'),
+     'Suction 54 PSI (normal 55–75 PSI). Added 1.2 lbs R-410A.',
+     'Inspect for refrigerant leak. Pressure-test system before next recharge.', 'rules'),
 
     -- Nov 2024
-    (v_tenant_id, v_jh11, 'low_suction_pressure', 'warning',
+    (v_tenant_id, v_jh11, v_e10, 'warning',
      'Recurring low suction pressure — second event in 7 months',
-     'Suction 51 PSI. Pattern suggests active slow leak.', 'rules_engine'),
-    (v_tenant_id, v_jh11, 'high_superheat', 'warning',
+     'Suction 51 PSI. Pattern suggests active slow leak.',
+     'Perform leak search and repair before recharging again.', 'rules'),
+    (v_tenant_id, v_jh11, v_e10, 'warning',
      'High superheat consistent with low refrigerant charge',
-     'Superheat 23°F (normal 10–20°F).', 'rules_engine'),
+     'Superheat 23°F (normal 10–20°F).',
+     'Restore refrigerant charge to manufacturer spec.', 'rules'),
 
     -- May 2025
-    (v_tenant_id, v_jh17, 'low_suction_pressure', 'critical',
+    (v_tenant_id, v_jh17, v_e10, 'critical',
      'Third low-charge event — active refrigerant leak confirmed',
-     'Suction 52 PSI. Three recharges in 13 months.', 'rules_engine'),
-    (v_tenant_id, v_jh17, 'high_discharge_pressure', 'warning',
+     'Suction 52 PSI. Three recharges in 13 months.',
+     'Locate and repair leak immediately. Further recharges without repair are not cost-effective.', 'rules'),
+    (v_tenant_id, v_jh17, v_e10, 'warning',
      'High discharge pressure suggests compressor valve wear',
-     'Discharge 265 PSI (normal 225–260). Independent of refrigerant charge.', 'rules_engine'),
+     'Discharge 265 PSI (normal 225–260). Independent of refrigerant charge.',
+     'Monitor compressor amps trend. Plan for compressor or unit replacement.', 'rules'),
 
     -- Jun 2025
-    (v_tenant_id, v_jh18, 'high_discharge_pressure', 'warning',
+    (v_tenant_id, v_jh18, v_e10, 'warning',
      'Discharge pressure remains elevated after recharge',
-     'Discharge 269 PSI post-recharge confirms mechanical high-side issue.', 'rules_engine'),
+     'Discharge 269 PSI post-recharge confirms mechanical high-side issue.',
+     'Evaluate compressor condition. High-side issue is independent of charge level.', 'rules'),
 
     -- Jul–Sep 2025
-    (v_tenant_id, v_jh19, 'high_discharge_pressure', 'warning',
+    (v_tenant_id, v_jh19, v_e10, 'warning',
      'Escalating discharge pressure — compressor valve degradation',
-     'Discharge 272 PSI. Trend: +3 PSI/month since May.', 'rules_engine'),
-    (v_tenant_id, v_jh20, 'high_discharge_pressure', 'critical',
+     'Discharge 272 PSI. Trend: +3 PSI/month since May.',
+     'Schedule compressor replacement or full unit replacement.', 'rules'),
+    (v_tenant_id, v_jh20, v_e10, 'critical',
      'High discharge pressure with elevated compressor amps',
-     'Discharge 275 PSI, amps 24.0A. Combined indicators of compressor failure.', 'rules_engine'),
-    (v_tenant_id, v_jh21, 'high_discharge_pressure', 'critical',
+     'Discharge 275 PSI, amps 24.0A. Combined indicators of compressor failure.',
+     'Replace compressor or full unit. Operating in this condition risks complete failure.', 'rules'),
+    (v_tenant_id, v_jh21, v_e10, 'critical',
      'Discharge pressure trend indicates imminent compressor failure',
-     'Discharge 277 PSI. Amps 24.4A. Replacement recommended.', 'rules_engine'),
+     'Discharge 277 PSI. Amps 24.4A.',
+     'Immediate replacement recommended. Continued operation risks sudden failure.', 'rules'),
 
     -- Oct 2025
-    (v_tenant_id, v_jh22, 'low_suction_pressure', 'critical',
+    (v_tenant_id, v_jh22, v_e10, 'critical',
      'Fourth low-charge event — leak repair or unit replacement required',
-     'Suction 53 PSI. Leak unresolved across 4 recharges.', 'rules_engine'),
-    (v_tenant_id, v_jh22, 'high_discharge_pressure', 'critical',
+     'Suction 53 PSI. Leak unresolved across 4 recharges.',
+     'Further recharges without leak repair or unit replacement are not justified.', 'rules'),
+    (v_tenant_id, v_jh22, v_e10, 'critical',
      'Critical discharge pressure — compressor near end of service life',
-     'Discharge 281 PSI. Compressor replacement or full unit replacement required.', 'rules_engine'),
+     'Discharge 281 PSI. Compressor replacement or full unit replacement required.',
+     'Do not defer replacement. Risk of sudden complete failure is high.', 'rules'),
 
     -- Nov 2025
-    (v_tenant_id, v_jh23, 'low_suction_pressure', 'critical',
+    (v_tenant_id, v_jh23, v_e10, 'critical',
      'Severe refrigerant undercharge across all pressure readings',
-     'Suction 50 PSI, subcooling 7°F. Unit at ~60% rated capacity.', 'rules_engine'),
-    (v_tenant_id, v_jh23, 'high_discharge_pressure', 'critical',
+     'Suction 50 PSI, subcooling 7°F. Unit at ~60% rated capacity.',
+     'Unit replacement approved. Expedite installation of replacement unit.', 'rules'),
+    (v_tenant_id, v_jh23, v_e10, 'critical',
      'Discharge pressure critical — compressor at end of service life',
-     'Discharge 285 PSI. Amps 25.7A. Replacement approved by customer.', 'rules_engine'),
+     'Discharge 285 PSI. Amps 25.7A.',
+     'Unit condemned. Proceed with scheduled replacement.', 'rules'),
 
     -- Dec 2025
-    (v_tenant_id, v_jh24, 'high_discharge_pressure', 'critical',
+    (v_tenant_id, v_jh24, v_e10, 'critical',
      'Discharge pressure continues to climb — unit failure imminent',
-     'Discharge 290 PSI. ETA for replacement unit: 3 weeks.', 'rules_engine'),
+     'Discharge 290 PSI. Replacement ETA 3 weeks.',
+     'Monitor daily. Have backup cooling available in case of sudden failure.', 'rules'),
 
     -- Jan 2026
-    (v_tenant_id, v_jh25, 'low_suction_pressure', 'critical',
+    (v_tenant_id, v_jh25, v_e10, 'critical',
      'Unit operating at critical undercharge — near failure state',
-     'Suction 46 PSI. Compressor efficiency severely degraded.', 'rules_engine'),
-    (v_tenant_id, v_jh25, 'high_discharge_pressure', 'critical',
+     'Suction 46 PSI. Compressor efficiency severely degraded.',
+     'Expedite replacement unit delivery. Minimize runtime to extend until replacement.', 'rules'),
+    (v_tenant_id, v_jh25, v_e10, 'critical',
      'High-pressure cutout tripping — immediate replacement required',
-     'Discharge 295 PSI. Safety device activating intermittently.', 'rules_engine'),
+     'Discharge 295 PSI. Safety device activating intermittently.',
+     'Do not reset cutout repeatedly. Install replacement unit as soon as possible.', 'rules'),
 
     -- Feb 2026
-    (v_tenant_id, v_jh26, 'low_suction_pressure', 'critical',
+    (v_tenant_id, v_jh26, v_e10, 'critical',
      'End-of-life: compressor unable to maintain pressure differential',
-     'Suction 44 PSI. Replacement unit scheduled.', 'rules_engine'),
-    (v_tenant_id, v_jh26, 'high_discharge_pressure', 'critical',
+     'Suction 44 PSI. Replacement unit scheduled.',
+     'Decommission upon arrival of replacement unit.', 'rules'),
+    (v_tenant_id, v_jh26, v_e10, 'critical',
      'End-of-life: discharge pressure at 300 PSI — unit condemned',
-     'Discharge 300 PSI. Safety cutout tripping on every cycle.', 'rules_engine')
+     'Discharge 300 PSI. Safety cutout tripping on every cycle.',
+     'Unit is at end of life. Replace immediately.', 'rules')
 
   ON CONFLICT DO NOTHING;
 
