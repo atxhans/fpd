@@ -55,6 +55,11 @@ function formatDisplayDate(dateStr: string): string {
 export function DispatchBoard({ jobs, date, technicians }: DispatchBoardProps) {
   const router = useRouter()
 
+  function localToday(): string {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  }
+
   function navigate(newDate: string) {
     router.push(`/schedule?date=${newDate}`)
   }
@@ -90,7 +95,7 @@ export function DispatchBoard({ jobs, date, technicians }: DispatchBoardProps) {
           variant="outline"
           size="sm"
           className="ml-2"
-          onClick={() => navigate(new Date().toISOString().split('T')[0])}
+          onClick={() => navigate(localToday())}
         >
           Today
         </Button>

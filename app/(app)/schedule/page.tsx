@@ -39,8 +39,8 @@ export default async function SchedulePage({
       .select('id, job_number, status, priority, scheduled_at, service_category, assigned_technician_id, customers(name), sites(name, city, state), profiles!jobs_assigned_technician_id_fkey(first_name, last_name)')
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
-      .gte('scheduled_at', `${date}T00:00:00`)
-      .lte('scheduled_at', `${date}T23:59:59`)
+      .gte('scheduled_at', `${date}T00:00:00+00:00`)
+      .lte('scheduled_at', `${date}T23:59:59+00:00`)
       .order('scheduled_at', { ascending: true }),
     supabase
       .from('memberships')
