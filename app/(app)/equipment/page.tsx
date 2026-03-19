@@ -48,12 +48,12 @@ export default async function EquipmentPage() {
   const eqIds = (equipment ?? []).map(e => e.id)
 
   // Fetch scoring inputs in bulk for all equipment
-  const [flaggedResult, diagnosticsResult, jobsResult] = eqIds.length > 0
+  const [allReadingsResult, diagnosticsResult, jobsResult] = eqIds.length > 0
     ? await Promise.all([
+        // All readings for the three keys used in trend computation, plus flagged status for all
         supabase.from('readings')
-          .select('equipment_id, captured_at, is_flagged, reading_types(key)')
-          .in('equipment_id', eqIds)
-          .eq('is_flagged', true),
+          .select('equipment_id, captured_at, value, is_flagged, reading_types(key)')
+          .in('equipment_id', eqIds),
         supabase.from('diagnostic_results')
           .select('equipment_id, severity, created_at, title')
           .in('equipment_id', eqIds),
@@ -64,14 +64,14 @@ export default async function EquipmentPage() {
     : [{ data: [] }, { data: [] }, { data: [] }]
 
   // Group by equipment_id
-  type FlaggedRow = { equipment_id: string; captured_at: string; is_flagged: boolean; reading_types: { key: string } | null }
+  type ReadingRow = { equipment_id: string; captured_at: string; value: number | null; is_flagged: boolean; reading_types: { key: string } | null }
   type DiagRow = { equipment_id: string; severity: string; created_at: string; title: string }
   type JobRow = { equipment_id: string; jobs: { completed_at: string | null; service_category: string } | null }
 
-  const flaggedByEq: Record<string, FlaggedRow[]> = {}
-  for (const r of (flaggedResult.data ?? []) as unknown as FlaggedRow[]) {
-    if (!flaggedByEq[r.equipment_id]) flaggedByEq[r.equipment_id] = []
-    flaggedByEq[r.equipment_id].push(r)
+  const readingsByEq: Record<string, ReadingRow[]> = {}
+  for (const r of (allReadingsResult.data ?? []) as unknown as ReadingRow[]) {
+    if (!readingsByEq[r.equipment_id]) readingsByEq[r.equipment_id] = []
+    readingsByEq[r.equipment_id].push(r)
   }
 
   const diagByEq: Record<string, DiagRow[]> = {}
@@ -87,17 +87,13 @@ export default async function EquipmentPage() {
     jobsByEq[je.equipment_id].push(je.jobs)
   }
 
-  // Compute score for each unit; prefer DB score if already stored (includes trend penalty)
+  // Compute score for every unit (always recompute so trend penalty is current)
   const scores: Record<string, number> = {}
   const toUpdate: { id: string; score: number }[] = []
   for (const eq of equipment ?? []) {
-    if (eq.health_score != null) {
-      scores[eq.id] = eq.health_score
-      continue
-    }
     const breakdown = computeHealthScore(
-      (flaggedByEq[eq.id] ?? []).map(r => ({
-        value: 1, captured_at: r.captured_at, is_flagged: true,
+      (readingsByEq[eq.id] ?? []).map(r => ({
+        value: r.value, captured_at: r.captured_at, is_flagged: r.is_flagged,
         reading_types: r.reading_types ? { key: r.reading_types.key } : null,
       })),
       diagByEq[eq.id] ?? [],
