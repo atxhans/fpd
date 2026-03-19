@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Users } from 'lucide-react'
@@ -23,6 +23,8 @@ export default async function TeamPage() {
 
   const isAdmin = membership.role === 'company_admin'
 
+  const admin = await createAdminClient()
+
   const [membersResult, invitesResult] = await Promise.all([
     supabase
       .from('memberships')
@@ -30,7 +32,8 @@ export default async function TeamPage() {
       .eq('tenant_id', tenantId)
       .eq('is_active', true)
       .order('created_at'),
-    supabase
+    // Use admin client — invitations table has no RLS until migration 020 is run
+    admin
       .from('invitations')
       .select('id, email, role, expires_at')
       .eq('tenant_id', tenantId)
