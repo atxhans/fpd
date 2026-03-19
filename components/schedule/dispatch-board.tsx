@@ -19,9 +19,17 @@ export function DispatchBoard({ jobs, technicians }: DispatchBoardProps) {
     ...technicians.map((t) => ({ id: t.id, label: t.name })),
   ]
 
+  const knownTechIds = new Set(technicians.map((t) => t.id))
+
   function getJobsForTech(techId: string | null): JobEntry[] {
     return jobs
-      .filter((j) => (techId === null ? !j.assigned_technician_id : j.assigned_technician_id === techId))
+      .filter((j) => {
+        if (techId === null) {
+          // Unassigned: no tech set, OR tech set but not in the known list
+          return !j.assigned_technician_id || !knownTechIds.has(j.assigned_technician_id)
+        }
+        return j.assigned_technician_id === techId
+      })
       .sort((a, b) => {
         if (!a.scheduled_at) return 1
         if (!b.scheduled_at) return -1
