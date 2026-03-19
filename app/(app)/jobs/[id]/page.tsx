@@ -13,6 +13,7 @@ import { ReadingsSection } from './readings-section'
 import { DiagnosticsSection } from './diagnostics-section'
 import { JobActions } from './job-actions'
 import { TechnicianAssign } from './technician-assign'
+import { FollowUpButton } from './follow-up-button'
 import { HealthBadge } from '@/components/shared/health-badge'
 import { WeatherBadge } from '@/components/shared/weather-badge'
 import type { WeatherSnapshot } from '@/lib/openweather'
@@ -85,6 +86,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         subtitle={customer?.name as string ?? ''}
         actions={
           <div className="flex items-center gap-2">
+            <FollowUpButton jobId={id} jobNumber={job.job_number} />
             <Link href={`/jobs/${id}/invoice`}>
               <Button variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-2" />
