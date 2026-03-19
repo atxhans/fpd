@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Users } from 'lucide-react'
 import { InviteDialog } from './invite-dialog'
 import { TeamMemberList } from './team-member-list'
+import { PendingInvites } from './pending-invites'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Team' }
@@ -23,12 +24,25 @@ export default async function TeamPage() {
 
   const isAdmin = membership.role === 'company_admin'
 
-  const { data: members } = await supabase
-    .from('memberships')
-    .select('id, user_id, role, is_active, accepted_at, profiles(first_name, last_name, email)')
-    .eq('tenant_id', tenantId)
-    .eq('is_active', true)
-    .order('created_at')
+  const [membersResult, invitesResult] = await Promise.all([
+    supabase
+      .from('memberships')
+      .select('id, user_id, role, is_active, accepted_at, profiles(first_name, last_name, email)')
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
+      .order('created_at'),
+    supabase
+      .from('invitations')
+      .select('id, email, role, expires_at')
+      .eq('tenant_id', tenantId)
+      .is('accepted_at', null)
+      .is('revoked_at', null)
+      .gte('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false }),
+  ])
+
+  const members = membersResult.data ?? []
+  const pendingInvites = invitesResult.data ?? []
 
   return (
     <div className="p-6 space-y-6">
@@ -40,7 +54,7 @@ export default async function TeamPage() {
 
       <Card>
         <CardContent className="p-0">
-          {!members?.length ? (
+          {members.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">
               <Users className="h-8 w-8 mx-auto mb-2 opacity-30" />
               <p className="font-medium">No team members yet</p>
@@ -58,6 +72,12 @@ export default async function TeamPage() {
           )}
         </CardContent>
       </Card>
+
+      <PendingInvites
+        invites={pendingInvites}
+        tenantId={tenantId}
+        isAdmin={isAdmin}
+      />
     </div>
   )
 }

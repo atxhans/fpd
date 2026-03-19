@@ -174,6 +174,34 @@ export interface Database {
           }
         ]
       }
+      invitations: {
+        Row: {
+          id: string
+          tenant_id: string
+          email: string
+          role: string
+          token: string
+          invited_by: string
+          accepted_by: string | null
+          expires_at: string
+          accepted_at: string | null
+          revoked_at: string | null
+          created_at: string
+        }
+        Insert: {
+          tenant_id: string
+          email: string
+          role: string
+          invited_by: string
+          expires_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           id: string
