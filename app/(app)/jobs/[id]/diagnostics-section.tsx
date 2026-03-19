@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils'
 interface DiagnosticResult {
   id: string
   severity: string
-  rule_key: string
-  message: string
-  detail: string | null
+  title: string
+  description: string
+  recommendation: string | null
   source: string
 }
 
@@ -38,10 +38,10 @@ export function DiagnosticsSection({ diagnostics }: DiagnosticsSectionProps) {
               <div className="flex items-start gap-3">
                 <Icon className={cn('h-5 w-5 mt-0.5 shrink-0', config.iconClass)} />
                 <div className="flex-1 min-w-0">
-                  <p className={cn('font-semibold text-sm', config.titleClass)}>{d.rule_key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</p>
-                  <p className="text-sm mt-1">{d.message}</p>
-                  {d.detail && <p className="text-xs text-muted-foreground mt-1">{d.detail}</p>}
-                  <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">{d.source.replace('_', ' ')}</p>
+                  <p className={cn('font-semibold text-sm', config.titleClass)}>{d.title}</p>
+                  <p className="text-sm mt-1">{d.description}</p>
+                  {d.recommendation && <p className="text-xs text-muted-foreground mt-1">{d.recommendation}</p>}
+                  <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">{d.source}</p>
                 </div>
               </div>
             </div>
