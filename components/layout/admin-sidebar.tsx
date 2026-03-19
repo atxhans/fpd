@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Building2, HeadphonesIcon, FileText,
-  Flag, Settings, Users, LogOut, Shield, Inbox, MessageCircle,
+  Flag, Settings, Users, LogOut, Shield, Inbox, MessageCircle, BarChart2,
 } from 'lucide-react'
 import { FieldpieceLogo } from './fieldpiece-logo'
 import { ChatInboxBadge } from './chat-inbox-badge'
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { href: '/admin/platform',         label: 'Platform Dashboard', icon: LayoutDashboard },
+  { href: '/admin/analytics',        label: 'Fleet Intelligence', icon: BarChart2 },
   { href: '/admin/tenants',          label: 'HVAC Contractors',   icon: Building2 },
   { href: '/admin/users',            label: 'Users',              icon: Users },
   { href: '/admin/support/inbox',    label: 'Live Chat',          icon: MessageCircle, badge: true },
