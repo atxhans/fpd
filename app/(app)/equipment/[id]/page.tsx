@@ -91,6 +91,10 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
     diagnosticResults,
     jobs.map(j => ({ completed_at: j.completed_at, service_category: j.service_category })),
   )
+
+  // Persist health score for list-page display (fire-and-forget)
+  void supabase.from('equipment').update({ health_score: healthBreakdown.total, health_score_at: new Date().toISOString() }).eq('id', id)
+
   const customer = eq.customers as unknown as Record<string, unknown>
   const site = eq.sites as unknown as Record<string, unknown>
   const canEdit = ['company_admin', 'dispatcher'].includes(membership?.role ?? '')

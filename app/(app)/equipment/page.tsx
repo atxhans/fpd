@@ -10,6 +10,22 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Equipment' }
 
+function HealthBadge({ score }: { score: number | null }) {
+  if (score == null) return <span className="text-xs text-muted-foreground">—</span>
+  const { label, cls } =
+    score >= 85 ? { label: 'Excellent', cls: 'bg-green-100 text-green-800' } :
+    score >= 70 ? { label: 'Good',      cls: 'bg-lime-100 text-lime-800' } :
+    score >= 50 ? { label: 'Fair',      cls: 'bg-yellow-100 text-yellow-800' } :
+    score >= 30 ? { label: 'Poor',      cls: 'bg-orange-100 text-orange-800' } :
+                  { label: 'Critical',  cls: 'bg-red-100 text-red-800' }
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${cls}`}>
+      <span className="tabular-nums">{score}</span>
+      <span className="font-normal opacity-75">{label}</span>
+    </span>
+  )
+}
+
 export default async function EquipmentPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -22,7 +38,7 @@ export default async function EquipmentPage() {
 
   const { data: equipment } = await supabase
     .from('equipment')
-    .select('id, manufacturer, model_number, serial_number, unit_type, refrigerant_type, tonnage, install_date, status, customers(name), sites(name, city, state)')
+    .select('id, manufacturer, model_number, serial_number, unit_type, refrigerant_type, tonnage, install_date, status, health_score, customers(name), sites(name, city, state)')
     .eq('tenant_id', tenantId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
@@ -59,6 +75,7 @@ export default async function EquipmentPage() {
                         </p>
                       </div>
                       <div className="text-right shrink-0 space-y-1">
+                        <div><HealthBadge score={eq.health_score as number | null} /></div>
                         <Badge variant="outline">{String(eq.unit_type).replace(/_/g, ' ')}</Badge>
                         {eq.refrigerant_type != null && <p className="text-xs text-muted-foreground">{eq.refrigerant_type as string}</p>}
                         {eq.install_date != null && <p className="text-xs text-muted-foreground">Installed {formatDate(eq.install_date as string)}</p>}
