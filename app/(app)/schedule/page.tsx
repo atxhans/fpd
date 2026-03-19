@@ -1,13 +1,38 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/shared/page-header'
-import { DispatchBoard } from '@/components/schedule/dispatch-board'
+import { ScheduleContainer } from '@/components/schedule/schedule-container'
+import type { ViewType } from '@/components/schedule/types'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Schedule' }
 
 interface SearchParams {
   date?: string
+  view?: string
+}
+
+function getDateRange(date: string, view: string): { start: string; end: string } {
+  if (view === 'week') {
+    const d = new Date(`${date}T12:00:00`)
+    const day = d.getDay()
+    const monday = new Date(d)
+    monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    return {
+      start: monday.toISOString().split('T')[0],
+      end: sunday.toISOString().split('T')[0],
+    }
+  }
+  if (view === 'month') {
+    const start = `${date.slice(0, 7)}-01`
+    const d = new Date(`${start}T12:00:00`)
+    d.setMonth(d.getMonth() + 1)
+    d.setDate(0)
+    return { start, end: d.toISOString().split('T')[0] }
+  }
+  return { start: date, end: date }
 }
 
 export default async function SchedulePage({
@@ -30,8 +55,9 @@ export default async function SchedulePage({
   const tenantId = membership?.tenant_id
   if (!tenantId) redirect('/login')
 
-  // Default to today
   const date = params.date ?? new Date().toISOString().split('T')[0]
+  const view = (params.view ?? 'board') as ViewType
+  const { start, end } = getDateRange(date, view)
 
   const [jobsResult, techsResult] = await Promise.all([
     supabase
@@ -39,8 +65,8 @@ export default async function SchedulePage({
       .select('id, job_number, status, priority, scheduled_at, service_category, assigned_technician_id, customers(name), sites(name, city, state), profiles!jobs_assigned_technician_id_fkey(first_name, last_name)')
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
-      .gte('scheduled_at', `${date}T00:00:00+00:00`)
-      .lte('scheduled_at', `${date}T23:59:59+00:00`)
+      .gte('scheduled_at', `${start}T00:00:00+00:00`)
+      .lte('scheduled_at', `${end}T23:59:59+00:00`)
       .order('scheduled_at', { ascending: true }),
     supabase
       .from('memberships')
@@ -87,7 +113,7 @@ export default async function SchedulePage({
         title="Schedule"
         subtitle="Dispatch board — view and manage daily job assignments"
       />
-      <DispatchBoard jobs={jobs} date={date} technicians={technicians} />
+      <ScheduleContainer jobs={jobs} date={date} view={view} technicians={technicians} />
     </div>
   )
 }
