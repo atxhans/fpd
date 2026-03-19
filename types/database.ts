@@ -674,21 +674,23 @@ export interface Database {
           id: string
           job_id: string
           tenant_id: string
-          rule_key: string
+          equipment_id: string | null
           severity: 'critical' | 'warning' | 'info'
-          message: string
-          detail: string | null
-          source: 'rules_engine' | 'ai'
+          title: string
+          description: string
+          recommendation: string | null
+          source: 'rules' | 'ai' | 'manual'
           created_at: string
         }
         Insert: {
           job_id: string
           tenant_id: string
-          rule_key: string
+          equipment_id?: string | null
           severity: 'critical' | 'warning' | 'info'
-          message: string
-          detail?: string | null
-          source: 'rules_engine' | 'ai'
+          title: string
+          description: string
+          recommendation?: string | null
+          source: 'rules' | 'ai' | 'manual'
         }
         Update: Record<string, never>
         Relationships: []

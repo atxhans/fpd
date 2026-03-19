@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Wrench } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-import { computeHealthScore } from '@/lib/health/score'
 import { HealthBadge } from '@/components/shared/health-badge'
 import type { Metadata } from 'next'
 
@@ -29,73 +28,6 @@ export default async function EquipmentPage() {
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(100)
-
-  const eqIds = (equipment ?? []).map(e => e.id)
-
-  // Fetch scoring inputs in bulk for all equipment
-  const [allReadingsResult, diagnosticsResult, jobsResult] = eqIds.length > 0
-    ? await Promise.all([
-        // All readings for the three keys used in trend computation, plus flagged status for all
-        supabase.from('readings')
-          .select('equipment_id, captured_at, value, is_flagged, reading_types(key)')
-          .in('equipment_id', eqIds),
-        supabase.from('diagnostic_results')
-          .select('equipment_id, severity, created_at, title')
-          .in('equipment_id', eqIds),
-        supabase.from('job_equipment')
-          .select('equipment_id, jobs(completed_at, service_category)')
-          .in('equipment_id', eqIds),
-      ])
-    : [{ data: [] }, { data: [] }, { data: [] }]
-
-  // Group by equipment_id
-  type ReadingRow = { equipment_id: string; captured_at: string; value: number | null; is_flagged: boolean; reading_types: { key: string } | null }
-  type DiagRow = { equipment_id: string; severity: string; created_at: string; title: string }
-  type JobRow = { equipment_id: string; jobs: { completed_at: string | null; service_category: string } | null }
-
-  const readingsByEq: Record<string, ReadingRow[]> = {}
-  for (const r of (allReadingsResult.data ?? []) as unknown as ReadingRow[]) {
-    if (!readingsByEq[r.equipment_id]) readingsByEq[r.equipment_id] = []
-    readingsByEq[r.equipment_id].push(r)
-  }
-
-  const diagByEq: Record<string, DiagRow[]> = {}
-  for (const d of (diagnosticsResult.data ?? []) as unknown as DiagRow[]) {
-    if (!diagByEq[d.equipment_id]) diagByEq[d.equipment_id] = []
-    diagByEq[d.equipment_id].push(d)
-  }
-
-  const jobsByEq: Record<string, { completed_at: string | null; service_category: string }[]> = {}
-  for (const je of (jobsResult.data ?? []) as unknown as JobRow[]) {
-    if (!je.jobs) continue
-    if (!jobsByEq[je.equipment_id]) jobsByEq[je.equipment_id] = []
-    jobsByEq[je.equipment_id].push(je.jobs)
-  }
-
-  // Compute score for every unit (always recompute so trend penalty is current)
-  const scores: Record<string, number> = {}
-  const toUpdate: { id: string; score: number }[] = []
-  for (const eq of equipment ?? []) {
-    const breakdown = computeHealthScore(
-      (readingsByEq[eq.id] ?? []).map(r => ({
-        value: r.value, captured_at: r.captured_at, is_flagged: r.is_flagged,
-        reading_types: r.reading_types ? { key: r.reading_types.key } : null,
-      })),
-      diagByEq[eq.id] ?? [],
-      jobsByEq[eq.id] ?? [],
-    )
-    scores[eq.id] = breakdown.total
-    toUpdate.push({ id: eq.id, score: breakdown.total })
-  }
-
-  // Persist newly computed scores (fire-and-forget)
-  if (toUpdate.length > 0) {
-    void Promise.all(
-      toUpdate.map(({ id, score }) =>
-        supabase.from('equipment').update({ health_score: score, health_score_at: new Date().toISOString() }).eq('id', id)
-      )
-    )
-  }
 
   return (
     <div className="p-6 space-y-6">
@@ -128,7 +60,7 @@ export default async function EquipmentPage() {
                         </p>
                       </div>
                       <div className="text-right shrink-0 space-y-1">
-                        <div><HealthBadge score={scores[eq.id as string] ?? null} /></div>
+                        <div><HealthBadge score={eq.health_score as number | null} /></div>
                         <Badge variant="outline">{String(eq.unit_type).replace(/_/g, ' ')}</Badge>
                         {eq.refrigerant_type != null && <p className="text-xs text-muted-foreground">{eq.refrigerant_type as string}</p>}
                         {eq.install_date != null && <p className="text-xs text-muted-foreground">Installed {formatDate(eq.install_date as string)}</p>}
