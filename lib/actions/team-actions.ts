@@ -3,8 +3,8 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-export const TENANT_ROLES = ['technician', 'dispatcher', 'company_admin'] as const
-export type TenantRole = typeof TENANT_ROLES[number]
+const TENANT_ROLES = ['technician', 'dispatcher', 'company_admin'] as const
+export type TenantRole = 'technician' | 'dispatcher' | 'company_admin'
 
 async function requireTenantAdmin(tenantId: string) {
   const supabase = await createClient()
