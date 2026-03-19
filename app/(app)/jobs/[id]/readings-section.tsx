@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Activity } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { formatDateTime } from '@/lib/utils'
+import { ReadingsGrid } from '@/components/shared/readings-grid'
 
 const READING_TYPES = [
   { key: 'suction_pressure',    label: 'Suction Pressure',      unit: 'PSI' },
@@ -161,21 +161,19 @@ export function ReadingsSection({ readings, jobId, tenantId, equipmentList }: Re
         {readings.length === 0 ? (
           <p className="text-muted-foreground text-sm py-4 text-center">No readings yet. Add the first reading above.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {readings.map((r: Record<string, unknown>) => {
-              const rt = r.reading_types as { label: string; unit: string } | null
-              return (
-                <div key={r.id as string} className="p-3 border border-border rounded-lg">
-                  <p className="text-xs text-muted-foreground">{rt?.label ?? 'Reading'}</p>
-                  <p className="text-2xl font-bold mt-1">
-                    {r.value != null ? r.value as number : r.bool_value ? 'Yes' : 'No'}
-                    {rt?.unit && <span className="text-sm font-normal ml-1 text-muted-foreground">{rt.unit}</span>}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">{formatDateTime(r.captured_at as string)}</p>
-                </div>
-              )
-            })}
-          </div>
+          <ReadingsGrid readings={readings.map((r: Record<string, unknown>) => {
+            const rt = r.reading_types as { label: string; unit: string; normal_min: number | null; normal_max: number | null } | null
+            return {
+              id: r.id as string,
+              label: rt?.label ?? 'Reading',
+              unit: rt?.unit ?? '',
+              value: r.value as number | null,
+              bool_value: r.bool_value as boolean | null,
+              is_flagged: r.is_flagged as boolean ?? false,
+              normal_min: rt?.normal_min ?? null,
+              normal_max: rt?.normal_max ?? null,
+            }
+          })} />
         )}
       </CardContent>
     </Card>

@@ -13,6 +13,7 @@ import { ReadingsSection } from './readings-section'
 import { DiagnosticsSection } from './diagnostics-section'
 import { JobActions } from './job-actions'
 import { TechnicianAssign } from './technician-assign'
+import { HealthBadge } from '@/components/shared/health-badge'
 
 export const metadata: Metadata = { title: 'Job Detail' }
 
@@ -53,7 +54,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       .is('deleted_at', null)
       .single(),
     supabase.from('readings')
-      .select('*, reading_types(key, label, unit)')
+      .select('*, reading_types(key, label, unit, normal_min, normal_max)')
       .eq('job_id', id)
       .order('captured_at', { ascending: false }),
     supabase.from('diagnostic_results')
@@ -151,15 +152,20 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           <CardContent>
             <div className="space-y-2">
               {equipment.map((eq: Record<string, unknown>) => (
-                <div key={eq.id as string} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                  <div>
-                    <p className="font-medium">{eq.manufacturer as string} {eq.model_number as string}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Serial: {eq.serial_number as string ?? '—'} · {eq.refrigerant_type as string ?? '—'}
-                    </p>
+                <Link key={eq.id as string} href={`/equipment/${eq.id}`}>
+                  <div className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/40 transition-colors">
+                    <div>
+                      <p className="font-medium">{eq.manufacturer as string} {eq.model_number as string}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Serial: {eq.serial_number as string ?? '—'} · {eq.refrigerant_type as string ?? '—'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <HealthBadge score={eq.health_score as number | null} />
+                      <Badge variant="outline">{String(eq.unit_type).replace(/_/g, ' ')}</Badge>
+                    </div>
                   </div>
-                  <Badge variant="outline">{String(eq.unit_type).replace(/_/g, ' ')}</Badge>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>

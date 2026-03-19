@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { formatDateTime } from '@/lib/utils'
 import { weatherEmoji, type WeatherSnapshot } from '@/lib/openweather'
+import { ReadingsGrid } from '@/components/shared/readings-grid'
 import { computeTrends } from '@/lib/health/trend'
 import type { TrendResult } from '@/types/health'
 
@@ -96,39 +97,20 @@ function OverviewTab({ readings }: { readings: ReadingRow[] }) {
     if (!key) continue
     if (!latest[key] || r.captured_at > latest[key].captured_at) latest[key] = r
   }
-  const cards = Object.values(latest)
 
-  if (cards.length === 0) {
-    return <p className="text-sm text-muted-foreground">No readings recorded for this unit.</p>
-  }
+  const gridItems = Object.values(latest).map(r => ({
+    id: r.id,
+    label: r.reading_types!.label,
+    unit: r.reading_types!.unit,
+    value: r.value,
+    bool_value: r.bool_value,
+    is_flagged: r.is_flagged,
+    normal_min: r.reading_types!.normal_min,
+    normal_max: r.reading_types!.normal_max,
+    captured_at: r.captured_at,
+  }))
 
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-      {cards.map((r) => {
-        const rt = r.reading_types!
-        const isLow = r.value != null && rt.normal_min != null && r.value < rt.normal_min
-        const isHigh = r.value != null && rt.normal_max != null && r.value > rt.normal_max
-        const borderClass = r.is_flagged || isHigh ? 'border-red-300 bg-red-50/40' : isLow ? 'border-blue-300 bg-blue-50/40' : 'border-border'
-        return (
-          <div key={r.id} className={`p-3 border rounded-lg ${borderClass}`}>
-            <p className="text-xs text-muted-foreground">{rt.label}</p>
-            {rt.unit === 'bool' ? (
-              <p className="text-xl font-bold">{r.bool_value ? 'Yes' : 'No'}</p>
-            ) : (
-              <p className="text-xl font-bold">
-                {r.value != null ? r.value : '—'}
-                <span className="text-sm font-normal text-muted-foreground ml-1">{rt.unit !== 'bool' ? rt.unit : ''}</span>
-              </p>
-            )}
-            {rt.normal_min != null && rt.normal_max != null && (
-              <p className="text-xs text-muted-foreground">Normal: {rt.normal_min}–{rt.normal_max} {rt.unit}</p>
-            )}
-            <p className="text-xs text-muted-foreground mt-1">{formatDateTime(r.captured_at)}</p>
-          </div>
-        )
-      })}
-    </div>
-  )
+  return <ReadingsGrid readings={gridItems} />
 }
 
 // ─── History Tab ─────────────────────────────────────────────────────────────
