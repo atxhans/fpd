@@ -116,6 +116,64 @@ export async function inviteTeamMember(
   return { ok: true }
 }
 
+export async function resendInvite(
+  invitationId: string,
+  tenantId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const { error: authError, user, supabase } = await requireTenantAdmin(tenantId)
+  if (authError || !user || !supabase) return { error: authError ?? 'Unauthorized' }
+
+  const admin = await createAdminClient()
+
+  const { data: invitation } = await admin
+    .from('invitations')
+    .select('email, role, token, expires_at')
+    .eq('id', invitationId)
+    .eq('tenant_id', tenantId)
+    .is('accepted_at', null)
+    .is('revoked_at', null)
+    .single()
+
+  if (!invitation) return { error: 'Invitation not found' }
+
+  let token = invitation.token
+
+  // If the invite has expired, revoke it and create a fresh one
+  if (new Date(invitation.expires_at) < new Date()) {
+    await admin.from('invitations')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('id', invitationId)
+
+    const { data: fresh } = await admin.from('invitations')
+      .insert({ tenant_id: tenantId, email: invitation.email, role: invitation.role, invited_by: user.id })
+      .select('token')
+      .single()
+
+    if (!fresh) return { error: 'Failed to create new invitation' }
+    token = fresh.token
+  }
+
+  const [{ data: profile }, { data: tenant }] = await Promise.all([
+    supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single(),
+    supabase.from('tenants').select('name').eq('id', tenantId).single(),
+  ])
+
+  const inviterName = profile
+    ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Your team admin'
+    : 'Your team admin'
+
+  await sendInvitationEmail({
+    to: invitation.email,
+    inviterName,
+    companyName: tenant?.name ?? 'your company',
+    role: ROLE_LABELS[invitation.role] ?? invitation.role,
+    inviteUrl: `${APP_URL}/accept-invite?token=${token}`,
+  })
+
+  revalidatePath('/team')
+  return { ok: true }
+}
+
 export async function revokeInvite(
   invitationId: string,
   tenantId: string,
