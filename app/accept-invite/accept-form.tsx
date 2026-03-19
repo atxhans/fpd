@@ -34,7 +34,6 @@ interface AcceptFormProps {
 }
 
 export function AcceptForm({ token, email, role, companyName }: AcceptFormProps) {
-  const router = useRouter()
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
