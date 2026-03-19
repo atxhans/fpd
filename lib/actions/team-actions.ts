@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { APP_URL } from '@/lib/constants'
 
 const TENANT_ROLES = ['technician', 'dispatcher', 'company_admin'] as const
 export type TenantRole = 'technician' | 'dispatcher' | 'company_admin'
@@ -46,6 +47,7 @@ export async function inviteTeamMember(
   // Invite via Supabase auth (sends magic-link email)
   const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { first_name: input.firstName, last_name: input.lastName },
+    redirectTo: APP_URL,
   })
 
   if (inviteError) {
