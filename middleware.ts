@@ -35,7 +35,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/invite')
 
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    // Redirect to root — root page routes platform users to /admin/platform
+    // and tenant users to /dashboard, avoiding loops for platform-only accounts
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   // Protected routes — redirect to login if not logged in

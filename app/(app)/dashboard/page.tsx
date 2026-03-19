@@ -24,7 +24,11 @@ export default async function DashboardPage() {
     .single()
 
   const tenantId = membership?.tenant_id
-  if (!tenantId) redirect('/login')
+  if (!tenantId) {
+    // Platform-only users have no tenant — send them to the admin console
+    const { data: profile } = await supabase.from('profiles').select('is_platform_user').eq('id', user.id).single()
+    redirect(profile?.is_platform_user ? '/admin/platform' : '/login')
+  }
 
   const { data: profile } = await supabase.from('profiles').select('first_name').eq('id', user.id).single()
 
