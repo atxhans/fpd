@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -54,7 +53,8 @@ export function AcceptForm({ token, email, role, companyName }: AcceptFormProps)
     }
 
     toast.success('Account created! Welcome to Fieldpiece Digital.')
-    router.push(result.redirectTo)
+    // Hard navigation so the new session cookies are sent with the request
+    window.location.href = result.redirectTo
   }
 
   return (
