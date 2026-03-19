@@ -6,7 +6,7 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { MapPin, Wrench, User, Clock, FileText } from 'lucide-react'
+import { MapPin, Wrench, User, Clock, FileText, CloudSun } from 'lucide-react'
 import { formatDateTime, formatDate } from '@/lib/utils'
 import type { Metadata } from 'next'
 import { ReadingsSection } from './readings-section'
@@ -14,6 +14,8 @@ import { DiagnosticsSection } from './diagnostics-section'
 import { JobActions } from './job-actions'
 import { TechnicianAssign } from './technician-assign'
 import { HealthBadge } from '@/components/shared/health-badge'
+import { WeatherBadge } from '@/components/shared/weather-badge'
+import type { WeatherSnapshot } from '@/lib/openweather'
 
 export const metadata: Metadata = { title: 'Job Detail' }
 
@@ -74,6 +76,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const tech = job.profiles as unknown as Record<string, unknown> | null
   const equipment = (job.job_equipment as unknown as Array<{ equipment: Record<string, unknown> }>)
     ?.map(je => je.equipment) ?? []
+  const weather = job.weather_snapshot as unknown as WeatherSnapshot | null
 
   return (
     <div className="p-6 space-y-6">
@@ -94,7 +97,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       />
 
       {/* Job Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${weather ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
         <Card>
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -130,6 +133,16 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             <StatusBadge status={job.status} />
           </CardContent>
         </Card>
+        {weather && (
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <CloudSun className="h-4 w-4" /> Weather at Service
+              </div>
+              <WeatherBadge snapshot={weather} variant="full" />
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Problem Description */}

@@ -1,3 +1,6 @@
+import type { WeatherSnapshot } from '@/lib/openweather'
+export type { WeatherSnapshot }
+
 export interface JobEntry {
   id: string
   job_number: string
@@ -11,6 +14,7 @@ export interface JobEntry {
   site_state: string
   tech_first: string | null
   tech_last: string | null
+  weather_snapshot: WeatherSnapshot | null
 }
 
 export interface Technician {

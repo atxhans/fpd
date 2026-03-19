@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import type { JobEntry } from './types'
 import { PRIORITY_COLORS } from './types'
+import { WeatherIcon } from '@/components/shared/weather-icon'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MAX_VISIBLE = 3
@@ -89,9 +90,12 @@ export function CalendarMonthView({ jobs, date, onDayClick }: CalendarMonthViewP
                 {visible.map((job) => (
                   <Link key={job.id} href={`/jobs/${job.id}`} className="block">
                     <div
-                      className={`rounded px-1.5 py-0.5 text-xs truncate hover:opacity-75 transition-opacity ${PRIORITY_COLORS[job.priority] ?? PRIORITY_COLORS.normal}`}
+                      className={`rounded px-1.5 py-0.5 text-xs flex items-center gap-1 hover:opacity-75 transition-opacity ${PRIORITY_COLORS[job.priority] ?? PRIORITY_COLORS.normal}`}
                     >
-                      {job.customer_name}
+                      {job.weather_snapshot && (
+                        <WeatherIcon icon={job.weather_snapshot.icon} size="xs" bare />
+                      )}
+                      <span className="truncate">{job.customer_name}</span>
                     </div>
                   </Link>
                 ))}

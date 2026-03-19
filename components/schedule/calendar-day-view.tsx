@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { StatusBadge } from '@/components/shared/status-badge'
 import type { JobEntry } from './types'
 import { PRIORITY_COLORS } from './types'
+import { WeatherIcon } from '@/components/shared/weather-icon'
 
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 6) // 6 AM – 8 PM
 
@@ -93,6 +94,13 @@ function JobCard({ job, showTime }: { job: JobEntry; showTime?: boolean }) {
           {techName}
           {showTime && job.scheduled_at ? ` · ${formatTime(job.scheduled_at)}` : ''}
         </p>
+        {job.weather_snapshot && (
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <WeatherIcon icon={job.weather_snapshot.icon} size="xs" />
+            <span className="text-xs font-medium tabular-nums">{job.weather_snapshot.temp_f}°F</span>
+            <span className="text-xs text-muted-foreground capitalize">{job.weather_snapshot.description}</span>
+          </div>
+        )}
         <div className="flex items-center gap-1.5">
           <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${PRIORITY_COLORS[job.priority] ?? PRIORITY_COLORS.normal}`}>
             {job.priority}

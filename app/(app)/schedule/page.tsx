@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/shared/page-header'
 import { ScheduleContainer } from '@/components/schedule/schedule-container'
-import type { ViewType } from '@/components/schedule/types'
+import type { ViewType, WeatherSnapshot } from '@/components/schedule/types'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Schedule' }
@@ -62,7 +62,7 @@ export default async function SchedulePage({
   const [jobsResult, techsResult] = await Promise.all([
     supabase
       .from('jobs')
-      .select('id, job_number, status, priority, scheduled_at, service_category, assigned_technician_id, customers(name), sites(name, city, state), profiles!jobs_assigned_technician_id_fkey(first_name, last_name)')
+      .select('id, job_number, status, priority, scheduled_at, service_category, assigned_technician_id, weather_snapshot, customers(name), sites(name, city, state), profiles!jobs_assigned_technician_id_fkey(first_name, last_name)')
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
       .gte('scheduled_at', `${start}T00:00:00+00:00`)
@@ -93,6 +93,7 @@ export default async function SchedulePage({
       site_state: site?.state ?? '',
       tech_first: tech?.first_name ?? null,
       tech_last: tech?.last_name ?? null,
+      weather_snapshot: j.weather_snapshot as unknown as WeatherSnapshot | null,
     }
   })
 

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { StatusBadge } from '@/components/shared/status-badge'
 import type { JobEntry } from './types'
 import { PRIORITY_COLORS } from './types'
+import { WeatherIcon } from '@/components/shared/weather-icon'
 
 interface CalendarWeekViewProps {
   jobs: JobEntry[]
@@ -100,8 +101,14 @@ export function CalendarWeekView({ jobs, date, onDayClick }: CalendarWeekViewPro
                       {job.scheduled_at ? formatTime(job.scheduled_at) : '—'}
                     </div>
                     <div className="truncate opacity-90">{job.customer_name}</div>
-                    <div className="mt-0.5">
+                    <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                       <StatusBadge status={job.status} />
+                      {job.weather_snapshot && (
+                        <>
+                          <WeatherIcon icon={job.weather_snapshot.icon} size="xs" bare />
+                          <span className="tabular-nums">{job.weather_snapshot.temp_f}°</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </Link>

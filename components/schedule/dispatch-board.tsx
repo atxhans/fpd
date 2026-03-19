@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDateTime } from '@/lib/utils'
 import type { JobEntry, Technician } from './types'
 import { PRIORITY_COLORS } from './types'
+import { WeatherIcon } from '@/components/shared/weather-icon'
 
 interface DispatchBoardProps {
   jobs: JobEntry[]
@@ -66,6 +67,13 @@ export function DispatchBoard({ jobs, technicians }: DispatchBoardProps) {
                         <p className="text-xs text-muted-foreground">
                           {formatDateTime(job.scheduled_at)}
                         </p>
+                      )}
+                      {job.weather_snapshot && (
+                        <div className="flex items-center gap-1.5">
+                          <WeatherIcon icon={job.weather_snapshot.icon} size="xs" />
+                          <span className="text-xs font-medium tabular-nums">{job.weather_snapshot.temp_f}°F</span>
+                          <span className="text-xs text-muted-foreground capitalize">{job.weather_snapshot.description}</span>
+                        </div>
                       )}
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span
