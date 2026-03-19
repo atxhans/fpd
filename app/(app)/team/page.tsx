@@ -28,7 +28,7 @@ export default async function TeamPage() {
   const [membersResult, invitesResult] = await Promise.all([
     supabase
       .from('memberships')
-      .select('id, user_id, role, is_active, accepted_at, profiles(first_name, last_name, email)')
+      .select('id, user_id, role, is_active, accepted_at, profiles!memberships_user_id_fkey(first_name, last_name, email)')
       .eq('tenant_id', tenantId)
       .eq('is_active', true)
       .order('created_at'),

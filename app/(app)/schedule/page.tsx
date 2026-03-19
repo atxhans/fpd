@@ -86,7 +86,7 @@ export default async function SchedulePage({
       .order('scheduled_at', { ascending: true }),
     supabase
       .from('memberships')
-      .select('user_id, profiles(id, first_name, last_name)')
+      .select('user_id, profiles!memberships_user_id_fkey(id, first_name, last_name)')
       .eq('tenant_id', tenantId)
       .in('role', ['technician', 'company_admin', 'dispatcher'])
       .eq('is_active', true),

@@ -16,7 +16,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
   const [tenantResult, membersResult, jobsResult, flagsResult] = await Promise.all([
     supabase.from('tenants').select('*').eq('id', id).single(),
-    supabase.from('memberships').select('id, role, is_active, accepted_at, profiles(first_name, last_name, email)').eq('tenant_id', id).order('created_at'),
+    supabase.from('memberships').select('id, role, is_active, accepted_at, profiles!memberships_user_id_fkey(first_name, last_name, email)').eq('tenant_id', id).order('created_at'),
     supabase.from('jobs').select('id, job_number, status, created_at').eq('tenant_id', id).is('deleted_at', null).order('created_at', { ascending: false }).limit(5),
     supabase.from('tenant_feature_flags').select('flag_key, enabled').eq('tenant_id', id),
   ])
