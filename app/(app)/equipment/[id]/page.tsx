@@ -9,6 +9,8 @@ import { EquipmentEditForm } from './equipment-edit-form'
 import { EquipmentTabs } from './equipment-tabs'
 import { HealthScoreCard } from './health-score-card'
 import { AiSummaryCard } from './ai-summary-card'
+import { ResearchCard } from './research-card'
+import type { EquipmentResearch } from '@/lib/actions/equipment-research-action'
 import type { ReadingRow, ReadingTypeStats } from './equipment-tabs'
 import { computeHealthScore } from '@/lib/health/score'
 import type { AiSummary } from '@/types/health'
@@ -244,6 +246,13 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
           <AiSummaryCard
             equipmentId={id}
             initialSummary={(eq.ai_summary ?? null) as AiSummary | null}
+          />
+
+          <ResearchCard
+            equipmentId={id}
+            manufacturer={eq.manufacturer}
+            modelNumber={eq.model_number ?? null}
+            initialResearch={(eq.research_data ?? null) as EquipmentResearch | null}
           />
         </div>
 

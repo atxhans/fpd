@@ -315,6 +315,8 @@ export interface Database {
           ai_summary_generated_at: string | null
           health_score: number | null
           health_score_at: string | null
+          research_data: Json | null
+          research_at: string | null
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -342,6 +344,8 @@ export interface Database {
           ai_summary_generated_at?: string | null
           health_score?: number | null
           health_score_at?: string | null
+          research_data?: Json | null
+          research_at?: string | null
           deleted_at?: string | null
         }
         Update: {
@@ -364,6 +368,8 @@ export interface Database {
           ai_summary_generated_at?: string | null
           health_score?: number | null
           health_score_at?: string | null
+          research_data?: Json | null
+          research_at?: string | null
           deleted_at?: string | null
         }
         Relationships: [
