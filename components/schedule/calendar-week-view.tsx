@@ -92,9 +92,9 @@ export function CalendarWeekView({ jobs, date, onDayClick }: CalendarWeekViewPro
           return (
             <div key={dayStr} className={`p-1.5 space-y-1 ${isToday ? 'bg-primary/5' : ''}`}>
               {dayJobs.map((job) => (
-                <Link key={job.id} href={`/jobs/${job.id}`}>
+                <Link key={job.id} href={`/jobs/${job.id}`} className="block">
                   <div
-                    className={`rounded px-1.5 py-1 text-xs hover:opacity-75 transition-opacity cursor-pointer ${PRIORITY_COLORS[job.priority] ?? PRIORITY_COLORS.normal}`}
+                    className={`rounded px-1.5 py-1 text-xs hover:opacity-75 transition-opacity ${PRIORITY_COLORS[job.priority] ?? PRIORITY_COLORS.normal}`}
                   >
                     <div className="font-medium truncate">
                       {job.scheduled_at ? formatTime(job.scheduled_at) : '—'}

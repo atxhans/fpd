@@ -48,7 +48,7 @@ export function DispatchBoard({ jobs, technicians }: DispatchBoardProps) {
                 </div>
               ) : (
                 colJobs.map((job) => (
-                  <Link key={job.id} href={`/jobs/${job.id}`}>
+                  <Link key={job.id} href={`/jobs/${job.id}`} className="block">
                     <div className="p-3 border border-border rounded-lg bg-white hover:bg-muted/40 transition-colors space-y-1.5">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-mono text-muted-foreground flex-1 truncate">

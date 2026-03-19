@@ -87,9 +87,9 @@ export function CalendarMonthView({ jobs, date, onDayClick }: CalendarMonthViewP
 
               <div className="space-y-0.5">
                 {visible.map((job) => (
-                  <Link key={job.id} href={`/jobs/${job.id}`}>
+                  <Link key={job.id} href={`/jobs/${job.id}`} className="block">
                     <div
-                      className={`rounded px-1.5 py-0.5 text-xs truncate hover:opacity-75 transition-opacity cursor-pointer ${PRIORITY_COLORS[job.priority] ?? PRIORITY_COLORS.normal}`}
+                      className={`rounded px-1.5 py-0.5 text-xs truncate hover:opacity-75 transition-opacity ${PRIORITY_COLORS[job.priority] ?? PRIORITY_COLORS.normal}`}
                     >
                       {job.customer_name}
                     </div>

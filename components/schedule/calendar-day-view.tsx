@@ -82,7 +82,7 @@ function JobCard({ job, showTime }: { job: JobEntry; showTime?: boolean }) {
     'border-l-gray-300'
 
   return (
-    <Link href={`/jobs/${job.id}`}>
+    <Link href={`/jobs/${job.id}`} className="block">
       <div className={`border border-border border-l-4 ${borderColor} rounded-lg p-2.5 min-w-[180px] max-w-[260px] bg-white hover:bg-muted/30 hover:shadow-sm transition-all space-y-1`}>
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-mono text-muted-foreground">{job.job_number}</span>
