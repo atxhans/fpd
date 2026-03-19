@@ -26,9 +26,11 @@ function formatGeneratedAt(iso: string) {
 export function AiSummaryCard({
   initialSummary,
   equipmentId,
+  hasExistingResearch,
 }: {
   initialSummary: AiSummary | null
   equipmentId: string
+  hasExistingResearch: boolean
 }) {
   const [summary, setSummary] = useState<AiSummary | null>(initialSummary)
   const [error, setError] = useState<string | null>(null)
@@ -71,7 +73,11 @@ export function AiSummaryCard({
               disabled={isPending}
               className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isPending ? 'Generating…' : summary ? 'Regenerate' : 'Generate AI Summary'}
+              {isPending
+                ? 'Generating…'
+                : summary
+                  ? 'Regenerate'
+                  : 'Generate AI Summary'}
             </button>
           </div>
         </div>
@@ -83,17 +89,31 @@ export function AiSummaryCard({
         )}
 
         {isPending && !summary && (
-          <div className="space-y-3 animate-pulse">
-            <div className="h-4 bg-muted rounded w-full" />
-            <div className="h-4 bg-muted rounded w-4/5" />
-            <div className="h-4 bg-muted rounded w-3/4" />
+          <div className="space-y-3">
+            {!hasExistingResearch && (
+              <p className="text-xs text-muted-foreground">
+                Step 1 of 2: Generating model research…
+              </p>
+            )}
+            <div className="space-y-3 animate-pulse">
+              <div className="h-4 bg-muted rounded w-full" />
+              <div className="h-4 bg-muted rounded w-4/5" />
+              <div className="h-4 bg-muted rounded w-3/4" />
+            </div>
           </div>
         )}
 
         {!summary && !isPending && !error && (
-          <p className="text-sm text-muted-foreground">
-            Generate an AI-powered summary based on this unit&apos;s readings, service history, and trends.
-          </p>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">
+              Generate an AI-powered summary based on this unit&apos;s readings, service history, and trends.
+            </p>
+            {!hasExistingResearch && (
+              <p className="text-xs text-muted-foreground">
+                Model research will be generated first to improve accuracy.
+              </p>
+            )}
+          </div>
         )}
 
         {summary && !isPending && (

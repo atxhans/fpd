@@ -3,6 +3,30 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type { AiSummary } from '@/types/health'
 import type { WeatherSnapshot } from '@/lib/openweather'
+import { generateEquipmentResearch, type EquipmentResearch } from './equipment-research-action'
+
+function buildResearchSection(research: EquipmentResearch | null): string {
+  if (!research) return '  Not available'
+  const lines: string[] = [
+    `- Product Line: ${research.product_line}`,
+    `- Expected Efficiency: ${research.efficiency}`,
+    `- Estimated Lifespan: ${research.lifespan}`,
+  ]
+  if (research.key_specs?.length > 0) {
+    lines.push('Expected Specifications:')
+    for (const s of research.key_specs) lines.push(`  ${s.label}: ${s.value}`)
+  }
+  if (research.common_issues?.length > 0) {
+    lines.push('Known Common Issues for This Model:')
+    for (const i of research.common_issues) {
+      lines.push(`  [${i.severity.toUpperCase()}] ${i.title}: ${i.description.slice(0, 120)}`)
+    }
+  }
+  if (research.recall_info) {
+    lines.push(`Recall / Safety Notice: ${research.recall_info}`)
+  }
+  return lines.join('\n')
+}
 
 function buildPrompt(data: {
   equipment: Record<string, unknown>
@@ -12,8 +36,9 @@ function buildPrompt(data: {
   readingsByVisit: { date: string; jobNumber: string; values: { label: string; key: string; value: number; unit: string; is_flagged: boolean; normal_min: number | null; normal_max: number | null }[] }[]
   diagnostics: { severity: string; title: string; description: string; created_at: string }[]
   trends: { label: string; unit: string; direction: string; slope: number; daysToMin: number | null; daysToMax: number | null }[]
+  research: EquipmentResearch | null
 }): string {
-  const { equipment: eq, site, jobs, readingsByVisit, diagnostics, trends } = data
+  const { equipment: eq, site, jobs, readingsByVisit, diagnostics, trends, research } = data
 
   const jobLines = jobs.map(j => {
     const d = j.scheduled_at ? j.scheduled_at.substring(0, 10) : 'Unknown date'
@@ -71,7 +96,10 @@ ${trendLines}
 MOST RECENT WEATHER:
 ${weatherLine}
 
-Provide your analysis now:`
+MODEL REFERENCE (manufacturer specs, known issues, expected lifespan):
+${buildResearchSection(research)}
+
+Provide your analysis now. Where relevant, compare observed readings and issues against the model reference data above.`
 }
 
 export async function generateAiSummary(
@@ -118,7 +146,16 @@ export async function generateAiSummary(
 
     if (!eqResult.data) return { error: 'Equipment not found' }
 
-    const eq = eqResult.data
+    let eq = eqResult.data
+
+    // Ensure model research exists — generate it first if missing
+    let research = (eq.research_data ?? null) as EquipmentResearch | null
+    if (!research) {
+      const researchResult = await generateEquipmentResearch(equipmentId)
+      if ('research' in researchResult && researchResult.research) {
+        research = researchResult.research as EquipmentResearch
+      }
+    }
     const rawReadings = readingsResult.data ?? []
     const diagnostics = (diagnosticsResult.data ?? []) as unknown as { severity: string; title: string; description: string; created_at: string }[]
     const jobs = ((jobsResult.data ?? [])
@@ -217,6 +254,7 @@ export async function generateAiSummary(
       readingsByVisit,
       diagnostics,
       trends,
+      research,
     })
 
     const Anthropic = (await import('@anthropic-ai/sdk')).default

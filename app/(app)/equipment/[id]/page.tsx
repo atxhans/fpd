@@ -246,6 +246,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
           <AiSummaryCard
             equipmentId={id}
             initialSummary={(eq.ai_summary ?? null) as AiSummary | null}
+            hasExistingResearch={!!eq.research_data}
           />
 
           <ResearchCard
