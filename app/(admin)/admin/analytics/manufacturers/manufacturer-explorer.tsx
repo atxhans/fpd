@@ -7,6 +7,8 @@ import {
 } from 'recharts'
 import { ChevronUp, ChevronDown, AlertTriangle, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { FleetBrief } from './fleet-brief'
+import { RiskProfileSheet } from './risk-profile-sheet'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -205,8 +207,20 @@ export function ManufacturerExplorer({ equipment, diagnostics }: ManufacturerExp
     { key: 'failures',  label: 'Failure Patterns' },
   ]
 
+  // Build fleet brief input from already-computed stats
+  const fleetBriefData = useMemo(() => ({
+    totalUnits: equipment.length,
+    manufacturers: mfgStats,
+    topFailures: failurePatterns.slice(0, 15),
+    ageData,
+    allMfg,
+  }), [equipment.length, mfgStats, failurePatterns, ageData, allMfg])
+
   return (
     <div className="space-y-4">
+      {/* Fleet Intelligence Brief */}
+      <FleetBrief data={fleetBriefData} />
+
       {/* Controls */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
@@ -269,37 +283,60 @@ export function ManufacturerExplorer({ equipment, diagnostics }: ManufacturerExp
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  {['Manufacturer', 'Total Units', 'Avg Health', 'At Risk (<50)', 'Retired/Decomm', 'Failure Rate'].map(h => (
+                  {['Manufacturer', 'Total Units', 'Avg Health', 'At Risk (<50)', 'Retired/Decomm', 'Failure Rate', ''].map(h => (
                     <th key={h} className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {mfgStats.map(m => (
-                  <tr key={m.manufacturer} className="hover:bg-muted/20">
-                    <td className="px-4 py-2.5 font-semibold">{m.manufacturer}</td>
-                    <td className="px-4 py-2.5">{m.count}</td>
-                    <td className="px-4 py-2.5">
-                      <span className="font-semibold" style={{ color: healthColor(m.avg_health) }}>
-                        {m.avg_health ?? '—'}
-                      </span>
-                      {m.avg_health != null && (
-                        <span className="text-xs text-muted-foreground ml-1.5">{healthLabel(m.avg_health)}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      {m.at_risk > 0
-                        ? <span className="text-orange-600 font-medium">{m.at_risk}</span>
-                        : <span className="text-muted-foreground">0</span>}
-                    </td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{m.failed}</td>
-                    <td className="px-4 py-2.5">
-                      <span className={m.failure_rate > 20 ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
-                        {m.failure_rate}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {mfgStats.map(m => {
+                  const mfgModels = modelStats.filter(ms => ms.manufacturer === m.manufacturer)
+                  const mfgAgeHealth = ageData.map(d => ({
+                    bucket: d.bucket as string,
+                    avg_health: (d[m.manufacturer] as number | undefined) ?? null,
+                  }))
+                  const mfgFailures = failurePatterns.filter(p => p.manufacturer === m.manufacturer)
+
+                  const profileData = {
+                    manufacturer: m.manufacturer,
+                    count: m.count,
+                    avg_health: m.avg_health,
+                    at_risk: m.at_risk,
+                    failure_rate: m.failure_rate,
+                    models: mfgModels.map(ms => ({ model: ms.model, count: ms.count, avg_health: ms.avg_health ?? null })),
+                    ageHealth: mfgAgeHealth,
+                    topFailures: mfgFailures,
+                  }
+
+                  return (
+                    <tr key={m.manufacturer} className="hover:bg-muted/20">
+                      <td className="px-4 py-2.5 font-semibold">{m.manufacturer}</td>
+                      <td className="px-4 py-2.5">{m.count}</td>
+                      <td className="px-4 py-2.5">
+                        <span className="font-semibold" style={{ color: healthColor(m.avg_health) }}>
+                          {m.avg_health ?? '—'}
+                        </span>
+                        {m.avg_health != null && (
+                          <span className="text-xs text-muted-foreground ml-1.5">{healthLabel(m.avg_health)}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {m.at_risk > 0
+                          ? <span className="text-orange-600 font-medium">{m.at_risk}</span>
+                          : <span className="text-muted-foreground">0</span>}
+                      </td>
+                      <td className="px-4 py-2.5 text-muted-foreground">{m.failed}</td>
+                      <td className="px-4 py-2.5">
+                        <span className={m.failure_rate > 20 ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
+                          {m.failure_rate}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <RiskProfileSheet data={profileData} />
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
